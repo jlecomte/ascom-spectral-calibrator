@@ -123,6 +123,8 @@ namespace ASCOM.DarkSkyGeek
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "DarkSkyGeek’s Spectral Calibrator";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.SetupDialogForm_FormClosed);
+            this.Load += new System.EventHandler(this.SetupDialogForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.DSGLogo)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
