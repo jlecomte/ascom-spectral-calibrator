@@ -10,6 +10,7 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Windows.Devices.Bluetooth;
 
 namespace ASCOM.DarkSkyGeek
 {
@@ -43,8 +44,15 @@ namespace ASCOM.DarkSkyGeek
         internal static string traceStateProfileName = "Trace Level";
         internal static string traceStateDefault = "false";
 
+        internal static string bleDeviceIdProfileName = "BLE Device ID";
+        internal static string bleDeviceIdDefault = string.Empty;
+
+        internal static string bleDeviceNameProfileName = "BLE Device Name";
+        internal static string bleDeviceNameDefault = string.Empty;
+
         // Variables to hold the current device configuration
-        // TODO
+        internal string bleDeviceId = string.Empty;
+        internal string bleDeviceName = string.Empty;
 
         /// <summary>
         /// Private variable to hold the connected state
@@ -55,6 +63,11 @@ namespace ASCOM.DarkSkyGeek
         /// Variable to hold the trace logger object (creates a diagnostic log file with information that you specify)
         /// </summary>
         internal TraceLogger tl;
+
+        /// <summary>
+        /// Variable to hold the physical BLE device we are communicating with.
+        /// </summary>
+        internal BluetoothLEDevice bleDevice;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DarkSkyGeek"/> class.
@@ -88,7 +101,7 @@ namespace ASCOM.DarkSkyGeek
             if (IsConnected)
                 System.Windows.Forms.MessageBox.Show("Already connected, just press OK");
 
-            using (SetupDialogForm F = new SetupDialogForm(tl))
+            using (SetupDialogForm F = new SetupDialogForm(this))
             {
                 var result = F.ShowDialog();
                 if (result == System.Windows.Forms.DialogResult.OK)
@@ -609,7 +622,17 @@ namespace ASCOM.DarkSkyGeek
             using (Profile driverProfile = new Profile())
             {
                 driverProfile.DeviceType = "Switch";
-                tl.Enabled = Convert.ToBoolean(driverProfile.GetValue(driverID, traceStateProfileName, string.Empty, traceStateDefault));
+
+                try
+                {
+                    tl.Enabled = Convert.ToBoolean(driverProfile.GetValue(driverID, traceStateProfileName, string.Empty, traceStateDefault));
+                    bleDeviceId = driverProfile.GetValue(driverID, bleDeviceIdProfileName, string.Empty, bleDeviceIdDefault);
+                    bleDeviceName = driverProfile.GetValue(driverID, bleDeviceNameProfileName, string.Empty, bleDeviceNameDefault);
+                }
+                catch (Exception e)
+                {
+                    tl.LogMessage("SpectralCalibrator", "ReadProfile: Exception handled: " + e.Message);
+                }
             }
         }
 
@@ -622,6 +645,8 @@ namespace ASCOM.DarkSkyGeek
             {
                 driverProfile.DeviceType = "Switch";
                 driverProfile.WriteValue(driverID, traceStateProfileName, tl.Enabled.ToString());
+                driverProfile.WriteValue(driverID, bleDeviceIdProfileName, bleDeviceId);
+                driverProfile.WriteValue(driverID, bleDeviceNameProfileName, bleDeviceName);
             }
         }
 

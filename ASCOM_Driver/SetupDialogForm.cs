@@ -4,20 +4,14 @@
  * Licensed under the MIT License. See the accompanying LICENSE file for terms.
  */
 
-using ASCOM.Utilities;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using Windows.Devices.Bluetooth;
-using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Enumeration;
 using System.Collections.Generic;
-using Windows.UI.Core;
-using System.Windows.Threading;
-using Windows.UI.Xaml.Controls;
 
 namespace ASCOM.DarkSkyGeek
 {
@@ -26,23 +20,25 @@ namespace ASCOM.DarkSkyGeek
 
     public partial class SetupDialogForm : Form
     {
-        TraceLogger tl;
+        SpectralCalibrator calibrator;
         DeviceWatcher deviceWatcher;
         Dictionary<string, string> devices = new Dictionary<string, string>();
 
-        public SetupDialogForm(TraceLogger tlDriver)
+        public SetupDialogForm(SpectralCalibrator calibrator)
         {
             InitializeComponent();
-
-            // Save the provided trace logger for use within the setup dialogue
-            tl = tlDriver;
+            this.calibrator = calibrator;
         }
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
-            tl.Enabled = chkTrace.Checked;
+            calibrator.tl.Enabled = chkTrace.Checked;
 
-            // TODO
+            if (bleDevicesComboBox.SelectedItem != null && bleDevicesComboBox.SelectedItem is ComboboxItem)
+            {
+                calibrator.bleDeviceId = (bleDevicesComboBox.SelectedItem as ComboboxItem).Value;
+                calibrator.bleDeviceName = (bleDevicesComboBox.SelectedItem as ComboboxItem).Text;
+            }
         }
 
         private void cmdCancel_Click(object sender, EventArgs e)
@@ -54,14 +50,14 @@ namespace ASCOM.DarkSkyGeek
         {
             try
             {
-                System.Diagnostics.Process.Start("https://github.com/jlecomte/ascom-spectral-calibrator");
+                Process.Start("https://github.com/jlecomte/ascom-spectral-calibrator");
             }
             catch (System.ComponentModel.Win32Exception noBrowser)
             {
                 if (noBrowser.ErrorCode == -2147467259)
                     MessageBox.Show(noBrowser.Message);
             }
-            catch (System.Exception other)
+            catch (Exception other)
             {
                 MessageBox.Show(other.Message);
             }
@@ -69,12 +65,27 @@ namespace ASCOM.DarkSkyGeek
 
         private void SetupDialogForm_Load(object sender, EventArgs e)
         {
-            chkTrace.Checked = tl.Enabled;
+            chkTrace.Checked = calibrator.tl.Enabled;
 
-            bleDevicesComboBox.Items.Clear();
+            if (calibrator.bleDeviceId != string.Empty)
+            {
+                if (calibrator.bleDeviceName != string.Empty)
+                {
+                    currentlyConfiguredDeviceLabel.Text = calibrator.bleDeviceName;
+                }
+                else
+                {
+                    currentlyConfiguredDeviceLabel.Text = "<unknown device>";
+                }
+            }
+            else
+            {
+                currentlyConfiguredDeviceLabel.Text = "<no device configured>";
+            }
+
+            bleDevicesComboBox.Items.Add("Detecting nearby BLE devices, please wait...");
+            bleDevicesComboBox.SelectedIndex = 0;
             bleDevicesComboBox.Enabled = false;
-
-            devices.Clear();
 
             // Query for extra properties you want returned
             string[] requestedProperties = {
@@ -102,14 +113,18 @@ namespace ASCOM.DarkSkyGeek
 
         private void SetupDialogForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            try
+            if (deviceWatcher != null)
             {
-                deviceWatcher.Stop();
+                try
+                {
+                    deviceWatcher.Stop();
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+
                 deviceWatcher = null;
-            }
-            catch (Exception)
-            {
-                // Ignore
             }
         }
 
@@ -143,14 +158,27 @@ namespace ASCOM.DarkSkyGeek
 
             this.BeginInvoke((MethodInvoker)(() =>
             {
+                bleDevicesComboBox.Items.Clear();
+                bleDevicesComboBox.Enabled = true;
+
+                bool selectedDeviceFound = false;
                 foreach (KeyValuePair<string, string> kv in devices)
                 {
                     ComboboxItem item = new ComboboxItem();
                     item.Text = kv.Value;
                     item.Value = kv.Key;
                     bleDevicesComboBox.Items.Add(item);
+                    if (kv.Key == calibrator.bleDeviceId)
+                    {
+                        bleDevicesComboBox.SelectedItem = item;
+                        selectedDeviceFound = true;
+                    }
                 }
-                bleDevicesComboBox.Enabled = true;
+
+                if (!selectedDeviceFound)
+                {
+                    bleDevicesComboBox.SelectedIndex = 0;
+                }
             }));
         }
 
