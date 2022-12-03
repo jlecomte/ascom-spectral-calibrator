@@ -130,31 +130,31 @@ namespace ASCOM.DarkSkyGeek
 
         private void DeviceWatcher_Added(DeviceWatcher sender, DeviceInformation deviceInfo)
         {
+            Debug.WriteLine(String.Format("Added   {0} {1}", deviceInfo.Id, deviceInfo.Name));
+ 
             if (String.IsNullOrEmpty(deviceInfo.Name) || devices.ContainsKey(deviceInfo.Id))
             {
                 return;
             }
 
             devices.Add(deviceInfo.Id, deviceInfo.Name);
-
-            // Debug.WriteLine(String.Format("Added   {0} {1}", deviceInfo.Id, deviceInfo.Name));
         }
 
         private void DeviceWatcher_Removed(DeviceWatcher sender, DeviceInformationUpdate deviceInfoUpdate)
         {
+            // Debug.WriteLine(String.Format("Removed {0} {1}", deviceInfoUpdate.Id, ""));
+
             if (devices.ContainsKey(deviceInfoUpdate.Id))
             {
                 devices.Remove(deviceInfoUpdate.Id);
             }
-
-            // Debug.WriteLine(String.Format("Removed {0} {1}", deviceInfoUpdate.Id, ""));
         }
 
         private void DeviceWatcher_EnumerationCompleted(DeviceWatcher deviceWatcher, object e)
         {
-            deviceWatcher.Stop();
+            Debug.WriteLine("Enumeration completed.");
 
-            // Debug.WriteLine("Enumeration completed.");
+            deviceWatcher.Stop();
 
             this.BeginInvoke((MethodInvoker)(() =>
             {

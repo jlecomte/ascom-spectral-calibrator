@@ -53,7 +53,7 @@ namespace ASCOM.DarkSkyGeek
         private const string bleDeviceNameProfileName = "BLE Device Name";
         private const string bleDeviceNameDefault = "";
 
-        private const string BLE_UUID = "f2d9de7d-6a59-40a3-bb7f-0c31970529bf";
+        private Guid BLE_UUID = new Guid("f2d9de7d-6a59-40a3-bb7f-0c31970529bf");
 
         // Variables to hold the current device configuration
         internal string bleDeviceId = string.Empty;

@@ -45,8 +45,11 @@ void setup() {
     while (1);
   }
 
-  BLE.setDeviceName("DarkSkyGeek-Calibration-Lamp");
-  BLE.setLocalName("DarkSkyGeek-Calibration-Lamp");
+  // Keep these under 20 bytes. That's the size of the BLE packets.
+  // Otherwise, the name may sometimes appear truncated.
+  // DSG = DarkSkyGeek of course... :)
+  BLE.setDeviceName("DSG-Calibration-Lamp");
+  BLE.setLocalName("DSG-Calibration-Lamp");
 
   BLE.setAdvertisedService(calibratorService);
 
