@@ -11,6 +11,7 @@ using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Timers;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Storage.Streams;
@@ -53,11 +54,13 @@ namespace ASCOM.DarkSkyGeek
         private const string bleDeviceNameProfileName = "BLE Device Name";
         private const string bleDeviceNameDefault = "";
 
-        private Guid BLE_UUID = new Guid("f2d9de7d-6a59-40a3-bb7f-0c31970529bf");
-
         // Variables to hold the current device configuration
         internal string bleDeviceId = string.Empty;
         internal string bleDeviceName = string.Empty;
+
+        // Constants
+        private Guid BLE_UUID = new Guid("f2d9de7d-6a59-40a3-bb7f-0c31970529bf");
+        private const int DUTY_CYCLE_PERIOD_SECONDS = 10;
 
         /// <summary>
         /// Private variable to hold the connected state
@@ -78,6 +81,12 @@ namespace ASCOM.DarkSkyGeek
         /// Variable to hold the physical BLE device characteristic we are interacting with.
         /// </summary>
         private GattCharacteristic bleCharacteristic;
+
+        // Variables used to manage the duty cycle.
+        private int dutyCycle = 0;
+        private System.Timers.Timer dutyCycleTimerOn;
+        private System.Timers.Timer dutyCycleTimerOff;
+        private System.Timers.Timer dutyCycleTimerOnDelayTimer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DarkSkyGeek"/> class.
@@ -127,8 +136,12 @@ namespace ASCOM.DarkSkyGeek
         {
             get
             {
-                tl.LogMessage("SupportedActions Get", "Returning empty arraylist");
-                return new ArrayList();
+                tl.LogMessage("SupportedActions Get", "Returning [\"GetDutyCycle\", \"SetDutyCycle\"]");
+                return new ArrayList()
+                {
+                    1, "GetDutyCycle",
+                    2, "SetDutyCycle"
+                };
             }
         }
 
@@ -141,8 +154,34 @@ namespace ASCOM.DarkSkyGeek
         /// </returns>
         public string Action(string actionName, string actionParameters)
         {
-            LogMessage("", "Action {0}, parameters {1} not implemented", actionName, actionParameters);
-            throw new ASCOM.ActionNotImplementedException("Action " + actionName + " is not implemented by this driver");
+            switch (actionName.ToUpper())
+            {
+                case "GETDUTYCYCLE":
+                    return dutyCycle.ToString();
+                case "SETDUTYCYCLE":
+                    int value;
+
+                    try
+                    {
+                        value = int.Parse(actionParameters);
+                    }
+                    catch (FormatException)
+                    {
+                        throw new ASCOM.InvalidValueException($"Unable to parse '{actionParameters}' as an integer.");
+                    }
+
+                    if (value < 0 || value > 100)
+                    {
+                        throw new ASCOM.InvalidValueException($"SetDutyCycle argument must be between 0 and 100. Value provided was '{value}'.");
+                    }
+
+                    dutyCycle = value;
+                    StartDutyCycleTimers();
+                    return string.Empty;
+                default:
+                    LogMessage("Action", "Action {0} is not implemented by this driver", actionName);
+                    throw new ASCOM.ActionNotImplementedException("Action " + actionName + " is not implemented by this driver");
+            }
         }
 
         /// <summary>
@@ -203,6 +242,8 @@ namespace ASCOM.DarkSkyGeek
         /// </summary>
         public void Dispose()
         {
+            StopDutyCycleTimers();
+            Connected = false;
             tl.Enabled = false;
             tl.Dispose();
             tl = null;
@@ -418,19 +459,27 @@ namespace ASCOM.DarkSkyGeek
         public void SetSwitch(short id, bool state)
         {
             Validate("SetSwitch", id);
+
             if (!CanWrite(id))
             {
                 var str = $"SetSwitch({id}) - Cannot Write";
                 tl.LogMessage("SetSwitch", str);
                 throw new MethodNotImplementedException(str);
             }
+
             tl.LogMessage("SetSwitch", $"SetSwitch({id}) = {state}");
+
+            // Changing the value of the switch will abort any duty cycle set up prior to now.
+            StopDutyCycleTimers();
+
             if (state)
             {
+                dutyCycle = 100; // so that GetDutyCycle returns something sensible...
                 TurnDeviceON();
             }
             else
             {
+                dutyCycle = 0; // so that GetDutyCycle returns something sensible...
                 TurnDeviceOFF();
             }
         }
@@ -484,8 +533,8 @@ namespace ASCOM.DarkSkyGeek
         public double GetSwitchValue(short id)
         {
             Validate("GetSwitchValue", id);
-            tl.LogMessage("GetSwitchValue", $"GetSwitchValue({id}) - not implemented");
-            throw new MethodNotImplementedException("GetSwitchValue");
+            tl.LogMessage("GetSwitchValue", $"GetSwitchValue({id})");
+            return GetSwitch(id) ? 1.0 : 0.0;
         }
 
         /// <summary>
@@ -501,8 +550,8 @@ namespace ASCOM.DarkSkyGeek
                 tl.LogMessage("SetSwitchValue", $"SetSwitchValue({id}) - Cannot write");
                 throw new ASCOM.MethodNotImplementedException($"SetSwitchValue({id}) - Cannot write");
             }
-            tl.LogMessage("SetSwitchValue", $"SetSwitchValue({id}) = {value} - not implemented");
-            throw new MethodNotImplementedException("SetSwitchValue");
+            tl.LogMessage("SetSwitchValue", $"SetSwitchValue({id}) = {value}");
+            SetSwitch(id, value != 0);
         }
 
         #endregion
@@ -667,6 +716,79 @@ namespace ASCOM.DarkSkyGeek
             if (result != GattCommunicationStatus.Success)
             {
                 throw new ASCOM.DriverException("Failed to turn device on.");
+            }
+        }
+
+        /// <summary>
+        /// Stop and cleans up the duty cycle timers.
+        /// </summary>
+        private void StopDutyCycleTimers()
+        {
+            dutyCycleTimerOn?.Stop();
+            dutyCycleTimerOn?.Dispose();
+            dutyCycleTimerOn = null;
+
+            dutyCycleTimerOff?.Stop();
+            dutyCycleTimerOff?.Dispose();
+            dutyCycleTimerOff = null;
+
+            dutyCycleTimerOnDelayTimer?.Stop();
+            dutyCycleTimerOnDelayTimer?.Dispose();
+            dutyCycleTimerOnDelayTimer = null;
+        }
+
+        /// <summary>
+        /// Starts up the duty cycle timers.
+        /// </summary>
+        private void StartDutyCycleTimers()
+        {
+            if (dutyCycle <= 0)
+            {
+                // No need to deal with timers in the "always off" case...
+                TurnDeviceOFF();
+            }
+            else if (dutyCycle >= 100)
+            {
+                // No need to deal with timers in the "always on" case...
+                TurnDeviceON();
+            }
+            else
+            {
+                // Just in case...
+                StopDutyCycleTimers();
+
+                // Make sure we start in the OFF state.
+                TurnDeviceOFF();
+
+                // DUTY_CYCLE_PERIOD_SECONDS seconds later, we will therefore need to turn off the device again,
+                // so we start the OFF timer now.
+                dutyCycleTimerOff = new System.Timers.Timer();
+                dutyCycleTimerOff.Interval = DUTY_CYCLE_PERIOD_SECONDS * 1000;
+                dutyCycleTimerOff.Elapsed += (Object source, ElapsedEventArgs e) =>
+                {
+                    TurnDeviceOFF();
+                };
+                dutyCycleTimerOff.Enabled = true;
+
+                // Start the ON timer with a delay that depends on the duty cycle.
+                dutyCycleTimerOnDelayTimer = new System.Timers.Timer();
+                dutyCycleTimerOnDelayTimer.Interval = 10 * DUTY_CYCLE_PERIOD_SECONDS * (100 - dutyCycle);
+                dutyCycleTimerOnDelayTimer.AutoReset = false;
+                dutyCycleTimerOnDelayTimer.Elapsed += (Object source_, ElapsedEventArgs e_) =>
+                {
+                    dutyCycleTimerOnDelayTimer?.Stop();
+                    dutyCycleTimerOnDelayTimer?.Dispose();
+                    dutyCycleTimerOnDelayTimer = null;
+
+                    dutyCycleTimerOn = new System.Timers.Timer();
+                    dutyCycleTimerOn.Interval = DUTY_CYCLE_PERIOD_SECONDS * 1000;
+                    dutyCycleTimerOn.Elapsed += (Object source, ElapsedEventArgs e) =>
+                    {
+                        TurnDeviceON();
+                    };
+                    dutyCycleTimerOn.Enabled = true;
+                };
+                dutyCycleTimerOnDelayTimer.Enabled = true;
             }
         }
 
