@@ -10,7 +10,10 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
+using Windows.Devices.Bluetooth.GenericAttributeProfile;
+using Windows.Storage.Streams;
 
 namespace ASCOM.DarkSkyGeek
 {
@@ -33,22 +36,24 @@ namespace ASCOM.DarkSkyGeek
         /// ASCOM DeviceID (COM ProgID) for this driver.
         /// The DeviceID is used by ASCOM applications to load the driver at runtime.
         /// </summary>
-        internal static string driverID = "ASCOM.DarkSkyGeek.SpectralCalibrator";
+        private const string driverID = "ASCOM.DarkSkyGeek.SpectralCalibrator";
 
         /// <summary>
         /// Driver description that displays in the ASCOM Chooser.
         /// </summary>
-        private static string driverDescription = "DarkSkyGeek’s Spectral Calibrator";
+        private const string deviceName = "DarkSkyGeek’s Spectral Calibrator";
 
         // Constants used for Profile persistence
-        internal static string traceStateProfileName = "Trace Level";
-        internal static string traceStateDefault = "false";
+        private const string traceStateProfileName = "Trace Level";
+        private const string traceStateDefault = "false";
 
-        internal static string bleDeviceIdProfileName = "BLE Device ID";
-        internal static string bleDeviceIdDefault = string.Empty;
+        private const string bleDeviceIdProfileName = "BLE Device ID";
+        private const string bleDeviceIdDefault = "";
 
-        internal static string bleDeviceNameProfileName = "BLE Device Name";
-        internal static string bleDeviceNameDefault = string.Empty;
+        private const string bleDeviceNameProfileName = "BLE Device Name";
+        private const string bleDeviceNameDefault = "";
+
+        private const string BLE_UUID = "f2d9de7d-6a59-40a3-bb7f-0c31970529bf";
 
         // Variables to hold the current device configuration
         internal string bleDeviceId = string.Empty;
@@ -67,7 +72,12 @@ namespace ASCOM.DarkSkyGeek
         /// <summary>
         /// Variable to hold the physical BLE device we are communicating with.
         /// </summary>
-        internal BluetoothLEDevice bleDevice;
+        private BluetoothLEDevice bleDevice;
+
+        /// <summary>
+        /// Variable to hold the physical BLE device characteristic we are interacting with.
+        /// </summary>
+        private GattCharacteristic bleCharacteristic;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DarkSkyGeek"/> class.
@@ -218,15 +228,28 @@ namespace ASCOM.DarkSkyGeek
 
                 if (value)
                 {
-                    connectedState = true;
                     LogMessage("Connected Set", "Connecting...");
-                    // TODO connect to the device
+                    Task t = ConnectToDevice();
+                    t.Wait();
+                    if (bleDevice != null && bleCharacteristic != null)
+                    {
+                        connectedState = true;
+                    }
+                    else
+                    {
+                        bleCharacteristic = null;
+                        bleDevice?.Dispose();
+                        bleDevice = null;
+                        throw new ASCOM.NotConnectedException("Failed to connect");
+                    }
                 }
                 else
                 {
                     connectedState = false;
                     LogMessage("Connected Set", "Disconnecting...");
-                    // TODO disconnect from the device
+                    bleCharacteristic = null;
+                    bleDevice?.Dispose();
+                    bleDevice = null;
                 }
             }
         }
@@ -239,8 +262,8 @@ namespace ASCOM.DarkSkyGeek
         {
             get
             {
-                tl.LogMessage("Description Get", driverDescription);
-                return driverDescription;
+                tl.LogMessage("Description Get", deviceName);
+                return deviceName;
             }
         }
 
@@ -252,7 +275,7 @@ namespace ASCOM.DarkSkyGeek
             get
             {
                 Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                string driverInfo = driverDescription + " Version " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
+                string driverInfo = deviceName + " Version " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
                 tl.LogMessage("DriverInfo Get", driverInfo);
                 return driverInfo;
             }
@@ -291,8 +314,8 @@ namespace ASCOM.DarkSkyGeek
         {
             get
             {
-                tl.LogMessage("Name Get", driverDescription);
-                return driverDescription;
+                tl.LogMessage("Name Get", deviceName);
+                return deviceName;
             }
         }
 
@@ -300,7 +323,7 @@ namespace ASCOM.DarkSkyGeek
 
         #region ISwitchV2 Implementation
 
-        private short numSwitch = 0;
+        private short numSwitch = 1;
 
         /// <summary>
         /// The number of switches managed by this driver
@@ -323,8 +346,8 @@ namespace ASCOM.DarkSkyGeek
         public string GetSwitchName(short id)
         {
             Validate("GetSwitchName", id);
-            tl.LogMessage("GetSwitchName", $"GetSwitchName({id}) - not implemented");
-            throw new MethodNotImplementedException("GetSwitchName");
+            tl.LogMessage("GetSwitchName", $"GetSwitchName({id})");
+            return deviceName;
         }
 
         /// <summary>
@@ -350,8 +373,8 @@ namespace ASCOM.DarkSkyGeek
         public string GetSwitchDescription(short id)
         {
             Validate("GetSwitchDescription", id);
-            tl.LogMessage("GetSwitchDescription", $"GetSwitchDescription({id}) - not implemented");
-            throw new MethodNotImplementedException("GetSwitchDescription");
+            tl.LogMessage("GetSwitchDescription", $"GetSwitchDescription({id})");
+            return "Turns the spectral calibrator ON or OFF";
         }
 
         /// <summary>
@@ -381,8 +404,10 @@ namespace ASCOM.DarkSkyGeek
         public bool GetSwitch(short id)
         {
             Validate("GetSwitch", id);
-            tl.LogMessage("GetSwitch", $"GetSwitch({id}) - not implemented");
-            throw new MethodNotImplementedException("GetSwitch");
+            tl.LogMessage("GetSwitch", $"GetSwitch({id})");
+            Task<bool> t = QueryDeviceState();
+            t.Wait();
+            return t.Result;
         }
 
         /// <summary>
@@ -399,8 +424,15 @@ namespace ASCOM.DarkSkyGeek
                 tl.LogMessage("SetSwitch", str);
                 throw new MethodNotImplementedException(str);
             }
-            tl.LogMessage("SetSwitch", $"SetSwitch({id}) = {state} - not implemented");
-            throw new MethodNotImplementedException("SetSwitch");
+            tl.LogMessage("SetSwitch", $"SetSwitch({id}) = {state}");
+            if (state)
+            {
+                TurnDeviceON();
+            }
+            else
+            {
+                TurnDeviceOFF();
+            }
         }
 
         #endregion
@@ -477,43 +509,6 @@ namespace ASCOM.DarkSkyGeek
 
         #endregion
 
-        #region Private methods
-
-        /// <summary>
-        /// Checks that the switch id is in range and throws an InvalidValueException if it isn't
-        /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="id">The id.</param>
-        private void Validate(string message, short id)
-        {
-            if (id < 0 || id >= numSwitch)
-            {
-                tl.LogMessage(message, string.Format("Switch {0} not available, range is 0 to {1}", id, numSwitch - 1));
-                throw new InvalidValueException(message, id.ToString(), string.Format("0 to {0}", numSwitch - 1));
-            }
-        }
-
-        /// <summary>
-        /// Checks that the switch id and value are in range and throws an
-        /// InvalidValueException if they are not.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="id">The id.</param>
-        /// <param name="value">The value.</param>
-        private void Validate(string message, short id, double value)
-        {
-            Validate(message, id);
-            var min = MinSwitchValue(id);
-            var max = MaxSwitchValue(id);
-            if (value < min || value > max)
-            {
-                tl.LogMessage(message, string.Format("Value {1} for Switch {0} is out of the allowed range {2} to {3}", id, value, min, max));
-                throw new InvalidValueException(message, value.ToString(), string.Format("Switch({0}) range {1} to {2}", id, min, max));
-            }
-        }
-
-        #endregion
-
         #region Private properties and methods
 
         #region ASCOM Registration
@@ -533,7 +528,7 @@ namespace ASCOM.DarkSkyGeek
                 P.DeviceType = "Switch";
                 if (bRegister)
                 {
-                    P.Register(driverID, driverDescription);
+                    P.Register(driverID, deviceName);
                 }
                 else
                 {
@@ -591,13 +586,97 @@ namespace ASCOM.DarkSkyGeek
         #endregion
 
         /// <summary>
+        /// Attempts to connect to the BLE device, and sets the `bleDevice` and
+        /// `bleCharacteristic` class instance members in case of success.
+        /// </summary>
+        private async Task ConnectToDevice()
+        {
+            bleDevice = await BluetoothLEDevice.FromIdAsync(bleDeviceId);
+
+            GattDeviceServicesResult servicesResult = await bleDevice.GetGattServicesAsync(BluetoothCacheMode.Uncached);
+            if (servicesResult.Status == GattCommunicationStatus.Success)
+            {
+                var services = servicesResult.Services;
+                foreach (var service in services)
+                {
+                    if (service.Uuid.Equals(BLE_UUID))
+                    {
+                        var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
+                        if (characteristicsResult.Status == GattCommunicationStatus.Success)
+                        {
+                            var characteristics = characteristicsResult.Characteristics;
+                            foreach (var characteristic in characteristics)
+                            {
+                                if (characteristic.Uuid.Equals(BLE_UUID))
+                                {
+                                    bleCharacteristic = characteristic;
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Indicates whether the device is turned off or off by reading the value of the BLE characteristic.
+        /// </summary>
+        private async Task<bool> QueryDeviceState()
+        {
+            tl.LogMessage("QueryDeviceState", "Reading BLE characteristic value...");
+            GattReadResult result = await bleCharacteristic.ReadValueAsync(BluetoothCacheMode.Uncached);
+            if (result.Status == GattCommunicationStatus.Success)
+            {
+                byte[] status = new byte[result.Value.Length];
+                DataReader.FromBuffer(result.Value).ReadBytes(status);
+                if (status.Length == 1)
+                {
+                    return status[0] != 0;
+                }
+            }
+
+            throw new ASCOM.DriverException("Failed to query device");
+        }
+
+        /// <summary>
+        /// Writes the 0x01 to the BLE characteristic, thereby turning the device on.
+        /// </summary>
+        private Task TurnDeviceON()
+        {
+            return UpdateDeviceState(0x01);
+        }
+
+        /// <summary>
+        /// Writes the 0x00 to the BLE characteristic, thereby turning the device off.
+        /// </summary>
+        private Task TurnDeviceOFF()
+        {
+            return UpdateDeviceState(0x00);
+        }
+
+        /// <summary>
+        /// Writes the specified value to the BLE characteristic.
+        /// </summary>
+        private async Task UpdateDeviceState(byte value)
+        {
+            tl.LogMessage("TurnON", "Writing BLE characteristic value...");
+            var writer = new DataWriter();
+            writer.WriteByte(value);
+            GattCommunicationStatus result = await bleCharacteristic.WriteValueAsync(writer.DetachBuffer());
+            if (result != GattCommunicationStatus.Success)
+            {
+                throw new ASCOM.DriverException("Failed to turn device on.");
+            }
+        }
+
+        /// <summary>
         /// Returns true if there is a valid connection to the driver hardware
         /// </summary>
         private bool IsConnected
         {
             get
             {
-                // TODO check that the driver hardware connection exists and is connected to the hardware
                 return connectedState;
             }
         }
@@ -660,6 +739,39 @@ namespace ASCOM.DarkSkyGeek
         {
             var msg = string.Format(message, args);
             tl.LogMessage(identifier, msg);
+        }
+
+        /// <summary>
+        /// Checks that the switch id is in range and throws an InvalidValueException if it isn't
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="id">The id.</param>
+        private void Validate(string message, short id)
+        {
+            if (id < 0 || id >= numSwitch)
+            {
+                tl.LogMessage(message, string.Format("Switch {0} not available, range is 0 to {1}", id, numSwitch - 1));
+                throw new InvalidValueException(message, id.ToString(), string.Format("0 to {0}", numSwitch - 1));
+            }
+        }
+
+        /// <summary>
+        /// Checks that the switch id and value are in range and throws an
+        /// InvalidValueException if they are not.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="id">The id.</param>
+        /// <param name="value">The value.</param>
+        private void Validate(string message, short id, double value)
+        {
+            Validate(message, id);
+            var min = MinSwitchValue(id);
+            var max = MaxSwitchValue(id);
+            if (value < min || value > max)
+            {
+                tl.LogMessage(message, string.Format("Value {1} for Switch {0} is out of the allowed range {2} to {3}", id, value, min, max));
+                throw new InvalidValueException(message, value.ToString(), string.Format("Switch({0}) range {1} to {2}", id, min, max));
+            }
         }
 
         #endregion
