@@ -12,12 +12,13 @@
 #
 # Finally, you can run this script. Here are a few examples:
 #
-#     > client.py on
-#     > client.py off
-#     > client.py dutycycle 30
+#     > calibrator.py on
+#     > calibrator.py off
+#     > calibrator.py dutycycle 30
 
 import argparse
 import win32com.client
+from threading import Timer
 
 parser = argparse.ArgumentParser()
 sp = parser.add_subparsers(help='commands', title='commands', dest='command')
@@ -29,20 +30,25 @@ dutycycle_parser.add_argument('ratio', type=int, help='Duty cycle ratio')
 args = parser.parse_args()
 
 device = win32com.client.Dispatch('ASCOM.DarkSkyGeek.SpectralCalibrator')
+
+print('Connecting...')
 if not device.Connected:
     device.Connected = True
+print('Connected!')
 
 if args.command == 'on':
     print('Turning on')
     device.SetSwitch(0, True)
-    input("Press Enter to exit the program...\n")
 elif args.command == 'off':
     print('Turning off')
     device.SetSwitch(0, False)
-    input("Press Enter to exit the program...\n")
 elif args.command == 'dutycycle':
     print('Starting on-off cycle')
     device.Action('SetDutyCycle', args.ratio)
-    input("Observe the calibrator device, and when you are ready, press Enter to exit the program...\n")
 
-device.Connected = False
+def disconnect():
+    print('Disconnecting...')
+    device.Connected = False
+    print('Disconnected!')
+
+Timer(3.0, disconnect)

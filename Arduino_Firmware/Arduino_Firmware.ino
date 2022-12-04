@@ -18,12 +18,26 @@
 // Bluetooth® Low Energy LED Service
 BLEService calibratorService("f2d9de7d-6a59-40a3-bb7f-0c31970529bf");
 
-// Bluetooth® Low Energy LED Switch Characteristic - custom 128-bit UUID, read and writable by central
-BLEByteCharacteristic switchCharacteristic("f2d9de7d-6a59-40a3-bb7f-0c31970529bf", BLERead | BLEWrite);
+// Bluetooth® Low Energy LED Switch Characteristic - custom 128-bit UUID, read and writable by the central device
+BLEShortCharacteristic switchCharacteristic("f2d9de7d-6a59-40a3-bb7f-0c31970529bf", BLERead | BLEWrite);
 
 const int controlPin = 8;
 
 int SIGNAL_ON, SIGNAL_OFF;
+
+// Commands and state values:
+const uint8_t CALIBRATOR_OFF = 0;
+const uint8_t CALIBRATOR_ON  = 1;
+const uint8_t ON_OFF_CYCLE   = 2;
+
+// Current state, defaults to OFF (we set the initial value of the characteristic to that as well)
+uint8_t state = CALIBRATOR_OFF;
+
+// Variables used to handle the on/off cycle.
+// Note: The period of the on/off cycle is 60 seconds, which should work well for most use cases.
+const int ON_OFF_CYCLE_PERIOD_MICROSEC = 60 * 1000 * 1000;
+uint8_t dutyCycle;
+unsigned long onOffCyclePeriodStartTime;
 
 void setup() {
 #ifdef DEBUG
@@ -57,7 +71,7 @@ void setup() {
   BLE.addService(calibratorService);
 
   // Set the initial value for the characeristic:
-  switchCharacteristic.writeValue(0);
+  switchCharacteristic.writeValue((uint16_t)CALIBRATOR_OFF);
 
   BLE.advertise();
 
@@ -83,7 +97,7 @@ void loop() {
   if (central) {
 #ifdef DEBUG
     Serial.print("Connected to central device: ");
-    // Print the central's MAC address:
+    // Print the central device MAC address:
     Serial.println(central.address());
 #endif
 
@@ -92,17 +106,29 @@ void loop() {
       // If the central device wrote to the characteristic,
       // use the value to control the LED:
       if (switchCharacteristic.written()) {
-        if (switchCharacteristic.value() != 0) {
+        uint16_t value = switchCharacteristic.value();
 #ifdef DEBUG
-          Serial.println("Calibrator on");
+        Serial.print("Received value: ");
+        Serial.println(value);
 #endif
-          digitalWrite(controlPin, SIGNAL_ON);
+        uint8_t command = (uint8_t)(value & 0xff);
+        if (command == CALIBRATOR_OFF) {
+          turnCalibratorOff();
+        } else if (command == CALIBRATOR_ON) {
+          turnCalibratorOn();
+        } else if (command == ON_OFF_CYCLE) {
+          uint8_t arg = (uint8_t)((value >> 8) & 0xff);
+          startOnOffCycle(arg);
         } else {
 #ifdef DEBUG
-          Serial.println("Calibrator off");
+          Serial.print("Invalid command:");
+          Serial.println(command);
 #endif
-          digitalWrite(controlPin, SIGNAL_OFF);
         }
+      }
+
+      if (state == ON_OFF_CYCLE) {
+        handleOnOffCycle();
       }
     }
 
@@ -110,5 +136,65 @@ void loop() {
     Serial.print(F("Disconnected from central device: "));
     Serial.println(central.address());
 #endif
+
+    // We could turn the device off here, but we don't so that the effect
+    // of a script can remain after the connection has been terminated.
+  }
+
+  // Upon disconnection, we need to continue handling the on/off cycle:
+  if (state == ON_OFF_CYCLE) {
+    handleOnOffCycle();
+  }
+}
+
+void turnCalibratorOff() {
+#ifdef DEBUG
+  Serial.println("Calibrator OFF");
+#endif
+  state = CALIBRATOR_OFF;
+  digitalWrite(controlPin, SIGNAL_OFF);
+}
+
+void turnCalibratorOn() {
+#ifdef DEBUG
+  Serial.println("Calibrator ON");
+#endif
+  state = CALIBRATOR_ON;
+  digitalWrite(controlPin, SIGNAL_ON);  
+}
+
+void startOnOffCycle(uint8_t arg) {
+#ifdef DEBUG
+  Serial.print("Starting on/off cycle with duty cycle value of: ");
+  Serial.println(arg);
+#endif
+
+  state = ON_OFF_CYCLE;
+  dutyCycle = arg;
+
+  // We start in the OFF state:
+  digitalWrite(controlPin, SIGNAL_OFF);
+
+  // And we save the current time:
+  onOffCyclePeriodStartTime = micros();
+}
+
+void handleOnOffCycle() {
+  unsigned long now = micros();
+  if (now - onOffCyclePeriodStartTime > ON_OFF_CYCLE_PERIOD_MICROSEC) {
+    // We completed one period!
+    // Turn the calibrator OFF:
+#ifdef DEBUG
+    Serial.println("Calibrator ON (duty cycle)");
+#endif
+    digitalWrite(controlPin, SIGNAL_OFF);
+    // And save the current time:
+    onOffCyclePeriodStartTime = now;
+  } else if (now - onOffCyclePeriodStartTime > ON_OFF_CYCLE_PERIOD_MICROSEC * dutyCycle / 256) {
+    // We are in the ON part of the cycle:
+#ifdef DEBUG
+    Serial.println("Calibrator OFF (duty cycle)");
+#endif
+    digitalWrite(controlPin, SIGNAL_ON);
   }
 }

@@ -175,7 +175,7 @@ namespace ASCOM.DarkSkyGeek
                     }
                 }
 
-                if (!selectedDeviceFound)
+                if (!selectedDeviceFound && bleDevicesComboBox.Items.Count > 0)
                 {
                     bleDevicesComboBox.SelectedIndex = 0;
                 }

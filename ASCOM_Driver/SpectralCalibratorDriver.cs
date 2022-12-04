@@ -11,7 +11,6 @@ using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using System.Timers;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Storage.Streams;
@@ -60,7 +59,10 @@ namespace ASCOM.DarkSkyGeek
 
         // Constants
         private Guid BLE_UUID = new Guid("f2d9de7d-6a59-40a3-bb7f-0c31970529bf");
-        private const int DUTY_CYCLE_PERIOD_SECONDS = 10;
+
+        private const byte CALIBRATOR_OFF = 0x00;
+        private const byte CALIBRATOR_ON  = 0x01;
+        private const byte ON_OFF_CYCLE   = 0x02;
 
         /// <summary>
         /// Private variable to hold the connected state
@@ -81,12 +83,6 @@ namespace ASCOM.DarkSkyGeek
         /// Variable to hold the physical BLE device characteristic we are interacting with.
         /// </summary>
         private GattCharacteristic bleCharacteristic;
-
-        // Variables used to manage the duty cycle.
-        private int dutyCycle = 0;
-        private System.Timers.Timer dutyCycleTimerOn;
-        private System.Timers.Timer dutyCycleTimerOff;
-        private System.Timers.Timer dutyCycleTimerOnDelayTimer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DarkSkyGeek"/> class.
@@ -136,11 +132,10 @@ namespace ASCOM.DarkSkyGeek
         {
             get
             {
-                tl.LogMessage("SupportedActions Get", "Returning [\"GetDutyCycle\", \"SetDutyCycle\"]");
+                tl.LogMessage("SupportedActions Get", "Returning [\"SetDutyCycle\"]");
                 return new ArrayList()
                 {
-                    1, "GetDutyCycle",
-                    2, "SetDutyCycle"
+                    1, "SetDutyCycle"
                 };
             }
         }
@@ -156,27 +151,17 @@ namespace ASCOM.DarkSkyGeek
         {
             switch (actionName.ToUpper())
             {
-                case "GETDUTYCYCLE":
-                    return dutyCycle.ToString();
                 case "SETDUTYCYCLE":
-                    int value;
-
+                    byte value;
                     try
                     {
-                        value = int.Parse(actionParameters);
+                        value = Byte.Parse(actionParameters);
                     }
                     catch (FormatException)
                     {
                         throw new ASCOM.InvalidValueException($"Unable to parse '{actionParameters}' as an integer.");
                     }
-
-                    if (value < 0 || value > 100)
-                    {
-                        throw new ASCOM.InvalidValueException($"SetDutyCycle argument must be between 0 and 100. Value provided was '{value}'.");
-                    }
-
-                    dutyCycle = value;
-                    StartDutyCycleTimers();
+                    StartOnOffCycle(value);
                     return string.Empty;
                 default:
                     LogMessage("Action", "Action {0} is not implemented by this driver", actionName);
@@ -242,7 +227,6 @@ namespace ASCOM.DarkSkyGeek
         /// </summary>
         public void Dispose()
         {
-            StopDutyCycleTimers();
             Connected = false;
             tl.Enabled = false;
             tl.Dispose();
@@ -287,8 +271,14 @@ namespace ASCOM.DarkSkyGeek
                 else
                 {
                     connectedState = false;
+
                     LogMessage("Connected Set", "Disconnecting...");
+
+                    bleCharacteristic?.Service?.Session?.Dispose();
+                    bleCharacteristic?.Service?.Dispose();
+
                     bleCharacteristic = null;
+
                     bleDevice?.Dispose();
                     bleDevice = null;
                 }
@@ -459,29 +449,17 @@ namespace ASCOM.DarkSkyGeek
         public void SetSwitch(short id, bool state)
         {
             Validate("SetSwitch", id);
-
             if (!CanWrite(id))
             {
                 var str = $"SetSwitch({id}) - Cannot Write";
                 tl.LogMessage("SetSwitch", str);
                 throw new MethodNotImplementedException(str);
             }
-
             tl.LogMessage("SetSwitch", $"SetSwitch({id}) = {state}");
-
-            // Changing the value of the switch will abort any duty cycle set up prior to now.
-            StopDutyCycleTimers();
-
             if (state)
-            {
-                dutyCycle = 100; // so that GetDutyCycle returns something sensible...
                 TurnDeviceON();
-            }
             else
-            {
-                dutyCycle = 0; // so that GetDutyCycle returns something sensible...
                 TurnDeviceOFF();
-            }
         }
 
         #endregion
@@ -669,7 +647,8 @@ namespace ASCOM.DarkSkyGeek
         }
 
         /// <summary>
-        /// Indicates whether the device is turned off or off by reading the value of the BLE characteristic.
+        /// Indicates whether the device is turned on or off by reading the value of the BLE characteristic.
+        /// If the device is currently in On/Off cycle, it will report itself as being turned on, fyi.
         /// </summary>
         private async Task<bool> QueryDeviceState()
         {
@@ -679,116 +658,53 @@ namespace ASCOM.DarkSkyGeek
             {
                 byte[] status = new byte[result.Value.Length];
                 DataReader.FromBuffer(result.Value).ReadBytes(status);
-                if (status.Length == 1)
-                {
-                    return status[0] != 0;
-                }
+                if (status.Length != 2)
+                    throw new ASCOM.DriverException("Unexpected value length: " + status.Length);
+                return status[0] != 0;
             }
 
             throw new ASCOM.DriverException("Failed to query device");
         }
 
         /// <summary>
-        /// Writes the 0x01 to the BLE characteristic, thereby turning the device on.
-        /// </summary>
-        private Task TurnDeviceON()
-        {
-            return UpdateDeviceState(0x01);
-        }
-
-        /// <summary>
-        /// Writes the 0x00 to the BLE characteristic, thereby turning the device off.
+        /// Writes 0x0000 to the BLE characteristic, thereby turning the device off.
         /// </summary>
         private Task TurnDeviceOFF()
         {
-            return UpdateDeviceState(0x00);
+            return UpdateDeviceState(CALIBRATOR_OFF);
+        }
+
+        /// <summary>
+        /// Writes 0x0001 to the BLE characteristic, thereby turning the device on.
+        /// </summary>
+        private Task TurnDeviceON()
+        {
+            return UpdateDeviceState(CALIBRATOR_ON);
+        }
+
+        /// <summary>
+        /// Writes 0x??02 to the BLE characteristic, thereby starting the on/off cycle.
+        /// </summary>
+        private Task StartOnOffCycle(byte dutycycle)
+        {
+            return UpdateDeviceState(ON_OFF_CYCLE, dutycycle);
         }
 
         /// <summary>
         /// Writes the specified value to the BLE characteristic.
         /// </summary>
-        private async Task UpdateDeviceState(byte value)
+        private async Task UpdateDeviceState(byte command, byte arg = 0)
         {
-            tl.LogMessage("TurnON", "Writing BLE characteristic value...");
+            tl.LogMessage("UpdateDeviceState", "Writing BLE characteristic value...");
             var writer = new DataWriter();
-            writer.WriteByte(value);
+            // First byte is the command
+            writer.WriteByte(command);
+            // Second byte is the command argument, if any.
+            writer.WriteByte(arg);
             GattCommunicationStatus result = await bleCharacteristic.WriteValueAsync(writer.DetachBuffer());
             if (result != GattCommunicationStatus.Success)
             {
-                throw new ASCOM.DriverException("Failed to turn device on.");
-            }
-        }
-
-        /// <summary>
-        /// Stop and cleans up the duty cycle timers.
-        /// </summary>
-        private void StopDutyCycleTimers()
-        {
-            dutyCycleTimerOn?.Stop();
-            dutyCycleTimerOn?.Dispose();
-            dutyCycleTimerOn = null;
-
-            dutyCycleTimerOff?.Stop();
-            dutyCycleTimerOff?.Dispose();
-            dutyCycleTimerOff = null;
-
-            dutyCycleTimerOnDelayTimer?.Stop();
-            dutyCycleTimerOnDelayTimer?.Dispose();
-            dutyCycleTimerOnDelayTimer = null;
-        }
-
-        /// <summary>
-        /// Starts up the duty cycle timers.
-        /// </summary>
-        private void StartDutyCycleTimers()
-        {
-            if (dutyCycle <= 0)
-            {
-                // No need to deal with timers in the "always off" case...
-                TurnDeviceOFF();
-            }
-            else if (dutyCycle >= 100)
-            {
-                // No need to deal with timers in the "always on" case...
-                TurnDeviceON();
-            }
-            else
-            {
-                // Just in case...
-                StopDutyCycleTimers();
-
-                // Make sure we start in the OFF state.
-                TurnDeviceOFF();
-
-                // DUTY_CYCLE_PERIOD_SECONDS seconds later, we will therefore need to turn off the device again,
-                // so we start the OFF timer now.
-                dutyCycleTimerOff = new System.Timers.Timer();
-                dutyCycleTimerOff.Interval = DUTY_CYCLE_PERIOD_SECONDS * 1000;
-                dutyCycleTimerOff.Elapsed += (Object source, ElapsedEventArgs e) =>
-                {
-                    TurnDeviceOFF();
-                };
-                dutyCycleTimerOff.Enabled = true;
-
-                // Start the ON timer with a delay that depends on the duty cycle.
-                dutyCycleTimerOnDelayTimer = new System.Timers.Timer();
-                dutyCycleTimerOnDelayTimer.Interval = 10 * DUTY_CYCLE_PERIOD_SECONDS * (100 - dutyCycle);
-                dutyCycleTimerOnDelayTimer.AutoReset = false;
-                dutyCycleTimerOnDelayTimer.Elapsed += (Object source_, ElapsedEventArgs e_) =>
-                {
-                    dutyCycleTimerOnDelayTimer?.Stop();
-                    dutyCycleTimerOnDelayTimer?.Dispose();
-                    dutyCycleTimerOnDelayTimer = null;
-
-                    dutyCycleTimerOn = new System.Timers.Timer();
-                    dutyCycleTimerOn.Interval = DUTY_CYCLE_PERIOD_SECONDS * 1000;
-                    dutyCycleTimerOn.Elapsed += (Object source, ElapsedEventArgs e) =>
-                    {
-                        TurnDeviceON();
-                    };
-                    dutyCycleTimerOn.Enabled = true;
-                };
-                dutyCycleTimerOnDelayTimer.Enabled = true;
+                throw new ASCOM.DriverException("Failed to update the device state.");
             }
         }
 
