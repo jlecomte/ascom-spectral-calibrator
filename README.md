@@ -82,7 +82,7 @@ The following are just suggestions... Also, over time, some of the links may no 
 **Step 3:** Then, proceed with the installation of the driver using `RegAsm.exe`, a utility that should already be present on your system (it comes with the .NET framework). Just don't forget to use the 64 bit version, and to pass the `/tlb /codebase` flags. Here is what it looked like on my imaging mini computer:
 
 ```
-> cd C:\Users\julien\ascom-oag-focuser\
+> cd C:\Users\julien\ascom-spectral-calibrator\
 > C:\Windows\Microsoft.NET\Framework64\v4.0.30319\RegAsm.exe /tlb /codebase ASCOM.DarkSkyGeek.SpectralCalibrator.dll
 Microsoft .NET Framework Assembly Registration Utility version 4.8.4161.0
 for Microsoft .NET Framework version 4.8.4161.0
