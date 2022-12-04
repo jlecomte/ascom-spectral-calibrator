@@ -33,6 +33,12 @@ It is extremely useful to be able to remotely turn the spectral calibrator _on_ 
 
 This device accomplishes these two goals in one neat package. It only requires a 12V DC power cable, which is fairly standard in astrophotography. The imaging computer communicates with the device using [Bluetooth Low Energy](https://en.wikipedia.org/wiki/Bluetooth_Low_Energy) (Why use BLE instead of a USB cable? I am trying to move away from using cables, as much as possible, on all of my DIY devices because my telescope cabling is a mess, and we live in the 21st century...) The device is represented as an ASCOM Switch component, so it can easily be turned _on_ or _off_ by pretty much any acquisition software. It also supports a custom action that allows it to set a ["duty cycle"](https://en.wikipedia.org/wiki/Duty_cycle) so that the calibrator can be blinked.
 
+## Demo
+
+The following video shows a working prototype of this project:
+
+[![YouTube video showing a working prototype of this project](images/YouTube-Prototype-Demo-Thumbnail.jpg)](https://youtu.be/eS6xX8gLDxU)
+
 ## Finished Product
 
 TODO
