@@ -16,6 +16,7 @@
 #     > calibrator.py off
 #     > calibrator.py dutycycle 30
 
+import sys
 import argparse
 import win32com.client
 from threading import Timer
@@ -31,10 +32,18 @@ args = parser.parse_args()
 
 device = win32com.client.Dispatch('ASCOM.DarkSkyGeek.SpectralCalibrator')
 
-print('Connecting...')
-if not device.Connected:
+try:
+    print('Connecting...')
     device.Connected = True
-print('Connected!')
+    print('Connected!')
+except:
+    sys.exit("""
+Failed to connect to the device.
+1. Did you install the ASCOM driver?
+2. Did you select the right device in the driver settings dialog?
+3. Is the device powered up?
+4. Did you rapidly disconnect/re-connect? (known issue: wait ~ 10 seconds after disconnecting, and before connecting again)
+""")
 
 if args.command == 'on':
     print('Turning on')
