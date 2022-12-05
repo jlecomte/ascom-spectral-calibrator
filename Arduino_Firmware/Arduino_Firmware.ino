@@ -190,7 +190,7 @@ void handleOnOffCycle() {
     digitalWrite(controlPin, SIGNAL_OFF);
     // And save the current time:
     onOffCyclePeriodStartTime = now;
-  } else if (now - onOffCyclePeriodStartTime > ON_OFF_CYCLE_PERIOD_MICROSEC * dutyCycle / 256) {
+  } else if (now - onOffCyclePeriodStartTime > ON_OFF_CYCLE_PERIOD_MICROSEC * (100 - dutyCycle) / 100) {
     // We are in the ON part of the cycle:
 #ifdef DEBUG
     Serial.println("Calibrator OFF (duty cycle)");

@@ -1,20 +1,20 @@
-# First, make sure that you have installed the ASCOM driver.
+# First, make sure that you have installed the ASCOM driver, and that you have Python 3 installed.
 # Refer to the README on how to do this...
 #
 # Next, install the pypiwin32 package (you only need to do this once):
-#     > python -m pip install pypiwin32
+#     C:\> python -m pip install pypiwin32
 #
 # Next, make sure that your ASCOM profile already has a BLE device selected.
 # The easiest way to do this is to use an application like N.I.N.A.
 # In the "Equipment" tab, open the "Switch" tab, and select the "DarkSkyGeek Spectral Calibrator" device.
-# Then, click on the button with the "gear" icon to open the driver setup dialog.
-# In the setup dialog, select the "DSG-Calibration-Lamp" device and click OK.
+# Then, click on the button with the gear icon to open the driver settings dialog.
+# In the settings dialog, select the "DSG-Calibration-Lamp" device, and click OK.
 #
 # Finally, you can run this script. Here are a few examples:
 #
-#     > calibrator.py on
-#     > calibrator.py off
-#     > calibrator.py dutycycle 30
+#     C:\> calibrator.py on
+#     C:\> calibrator.py off
+#     C:\> calibrator.py dutycycle 30
 
 import sys
 import argparse
@@ -42,7 +42,7 @@ Failed to connect to the device.
 1. Did you install the ASCOM driver?
 2. Did you select the right device in the driver settings dialog?
 3. Is the device powered up?
-4. Did you rapidly disconnect/re-connect? (known issue: wait ~ 10 seconds after disconnecting, and before connecting again)
+4. Did you rapidly disconnect/re-connect? (known issue: wait ~ 10-15 seconds after disconnecting, and before connecting again)
 """)
 
 if args.command == 'on':

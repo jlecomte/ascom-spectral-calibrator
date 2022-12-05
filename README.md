@@ -109,6 +109,8 @@ The ASCOM driver provides a settings dialog which allows you to select the BLE d
 
 **Note:** It takes about 15 to 20 seconds for the BLE device enumeration to complete and the dropdown list to be enabled, so be patient :)
 
+**Note:** Occasionally, the device does not show up in the list. Power cycle the device and reopen the settings dialog.
+
 ![Calibrator Settings Dialog](images/Calibrator-SettingsDialog.png)
 
 ## Command Line ASCOM Client (Python)
@@ -133,6 +135,8 @@ C:> calibrator.py dutycycle 25
 
 **Note:** The argument passed to the `dutycycle` command is a whole percentage, and must therefore be an integer between `0` and `100`, where `0` means "always off", and `100` means "always on". Any value in between will cause the device to blink with a period of 1 minute. So, a value of `25` means that the device will be _off_ for 45 seconds, and _on__ for 15 seconds.
 
+**Note:** You can stop the _on_/_off_ cycle by simply turning the calibrator _off_.
+
 ## Arduino Firmware
 
 ### Microcontroller Compatibility
@@ -143,6 +147,8 @@ The firmware was written specifically for, and tested with a genuine Arduino Nan
 
 * Open the Arduino IDE, and using the Boards Manager, install the `Arduino Mbed OS Nano Boards by Arduino`, which provides support for the Arduino Nano 33 BLE.
 * Finally, connect your Seeeduino board to your computer (make sure you use a USB-C cable that supports data and not just power!), open the sketch file located at `Arduino_Firmware\Arduino_Firmware.ino`, and click on the `Upload` button in the toolbar.
+
+**Note:** Make sure that the Arduino board is not connected to the MINI360 when you connect the Arduino to your computer because these little buck converters do not like to have a voltage applied to their output. They get very hot, and it smells like something is burning...
 
 ## Enclosure
 

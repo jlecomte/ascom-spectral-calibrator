@@ -152,14 +152,18 @@ namespace ASCOM.DarkSkyGeek
             switch (actionName.ToUpper())
             {
                 case "SETDUTYCYCLE":
-                    byte value;
+                    int value;
                     try
                     {
-                        value = Byte.Parse(actionParameters);
+                        value = int.Parse(actionParameters);
                     }
                     catch (FormatException)
                     {
                         throw new ASCOM.InvalidValueException($"Unable to parse '{actionParameters}' as an integer.");
+                    }
+                    if (value < 0 || value > 100)
+                    {
+                        throw new ASCOM.InvalidValueException($"Duty cycle must be an integer between 0 and 100.");
                     }
                     StartOnOffCycle(value);
                     return string.Empty;
@@ -685,9 +689,9 @@ namespace ASCOM.DarkSkyGeek
         /// <summary>
         /// Writes 0x??02 to the BLE characteristic, thereby starting the on/off cycle.
         /// </summary>
-        private Task StartOnOffCycle(byte dutycycle)
+        private Task StartOnOffCycle(int dutycycle)
         {
-            return UpdateDeviceState(ON_OFF_CYCLE, dutycycle);
+            return UpdateDeviceState(ON_OFF_CYCLE, (byte)dutycycle);
         }
 
         /// <summary>
