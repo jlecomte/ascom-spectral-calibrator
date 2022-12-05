@@ -3,6 +3,7 @@
 <!-- toc -->
 
 - [Introduction](#introduction)
+- [Demo](#demo)
 - [Finished Product](#finished-product)
 - [Pre-Requisites](#pre-requisites)
 - [Hardware](#hardware)
@@ -10,6 +11,7 @@
 - [Downloading And Installing The Driver](#downloading-and-installing-the-driver)
 - [Compiling The Driver (For Developers Only)](#compiling-the-driver-for-developers-only)
 - [Screenshots](#screenshots)
+- [Command Line ASCOM Client (Python)](#command-line-ascom-client-python)
 - [Arduino Firmware](#arduino-firmware)
 - [Microcontroller Compatibility](#microcontroller-compatibility)
 - [Compiling And Uploading The Firmware](#compiling-and-uploading-the-firmware)
@@ -29,7 +31,7 @@ This project covers the design and the implementation of an ASCOM-compatible spe
 It is extremely useful to be able to remotely turn the spectral calibrator _on_ or _off_ multiple times throughout the night. This can be done manually, using a remote-controlled power switch. But it is even more convenient to be able to control the spectral calibrator _programmatically_, for two reasons:
 
 1. If you use the "standard" calibration mode (mode #0 in specINTI - refer to the specINTI documentation for more details), you will want to automatically turn the calibrator _on_ or _off_ as part of your acquisition sequence. The calibrator does not need to be _on_ while you are acquiring the science images (injecting light can make it more difficult to guide on a faint star), but it will need to be _on_ for a short time at the beginning and at the end of the sequence in order to acquire reference spectra which will later be used to calibrate your science images.
-2. If you use the "lateral" calibration mode (mode #3 in specINTI), you will want to "blink" the calibrator throughout a science image acquisition in order to modulate the intensity of the calibration lines.
+2. If you use the "lateral" calibration mode (mode #3 in specINTI), you will want to "blink" the calibrator throughout an acquisition in order to modulate the intensity of the calibration lines. Indeed, if those calibration lines saturate the imaging sensor, you will not be able to cleanly subtract them from the target spectrum. You will also degrade the accuracy of the calibration, which defeats the point of using this calibration mode...
 
 This device accomplishes these two goals in one neat package. It only requires a 12V DC power cable, which is fairly standard in astrophotography. The imaging computer communicates with the device using [Bluetooth Low Energy](https://en.wikipedia.org/wiki/Bluetooth_Low_Energy) (Why use BLE instead of a USB cable? I am trying to move away from using cables, as much as possible, on all of my DIY devices because my telescope cabling is a mess, and we live in the 21st century...) The device is represented as an ASCOM Switch component, so it can easily be turned _on_ or _off_ by pretty much any acquisition software. It also supports a custom action that allows it to set a ["duty cycle"](https://en.wikipedia.org/wiki/Duty_cycle) so that the calibrator can be blinked.
 
@@ -105,7 +107,31 @@ Open Microsoft Visual Studio as an administrator (right-click on the Microsoft V
 
 The ASCOM driver provides a settings dialog which allows you to select the BLE device, once it has been detected. This is an operation you only really need to do once, because your selection is stored in your ASCOM profile. This must be done upon first connection, for obvious reasons.
 
+**Note:** It takes about 15 to 20 seconds for the BLE device enumeration to complete and the dropdown list to be enabled, so be patient :)
+
 ![Calibrator Settings Dialog](images/Calibrator-SettingsDialog.png)
+
+## Command Line ASCOM Client (Python)
+
+A simply Python script is included in the `ASCOM_Client/` directory. In ordet to use it, you will first need to [download and install Python 3 for your platform](https://www.python.org/downloads/). Then, you will need to install the `pypiwin32` package:
+
+```
+C:> python -m pip install pypiwin32
+```
+
+Next, make sure that your ASCOM profile already has a BLE device selected. The easiest way to do this is to use an application like N.I.N.A. In the "Equipment" tab, open the "Switch" tab, and select the "DarkSkyGeek Spectral Calibrator" device. Then, click on the button with the gear icon to open the driver settings dialog. Wait for the BLE device enumeration to complete, select the `DSG-Calibration-Lamp` device in the dropdown list, and click OK. Your selection will be saved in your ASCOM profile, so you don't need to do this again.
+
+Finally, you can run this script. Here are a few examples:
+
+```
+C:> calibrator.py --help
+C:> calibrator.py on
+C:> calibrator.py off
+C:> calibrator.py dutycycle --help
+C:> calibrator.py dutycycle 25
+```
+
+**Note:** The argument passed to the `dutycycle` command is a whole percentage, and must therefore be an integer between `0` and `100`, where `0` means "always off", and `100` means "always on". Any value in between will cause the device to blink with a period of 1 minute. So, a value of `25` means that the device will be _off_ for 45 seconds, and _on__ for 15 seconds.
 
 ## Arduino Firmware
 
