@@ -164,10 +164,14 @@ Here is what the prototype circuit looks like:
 
 ![Breadboard Prototype](images/Prototype-Breadboard-Only.jpg)
 
-Here is the full prototype, showing the EL inverter and the bulb, neatly nested inside a 3D printed enclosure:
+**Note:** There is no gate resistor on the photograph above, but it is generally _good practice_ to have one, which is why I included one in the schematics above. A 1KΩ resistor will work fine. The pull down resistor is absolutely essential, however. Use a 1KΩ resistor there too.
+
+Here is the full prototype, showing the EL inverter and the bulb neatly nested inside a 3D printed enclosure:
 
 ![Full Breadboard Prototype](images/Full-Prototype.jpg)
 
-And here is what my development setup looks like, showing my computer and a bench power supply:
+And finally, here is what the prototype circuit on a perforated circuit board looks like:
 
-![Full Breadboard Prototype](images/Development-Setup.jpg)
+![PCB Prototype Top](images/PCB-top.jpg)
+
+![PCB Prototype Bottom](images/PCB-bottom.jpg)
