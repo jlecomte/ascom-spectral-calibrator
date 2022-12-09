@@ -170,6 +170,10 @@ Here is the full prototype, showing the EL inverter and the bulb neatly nested i
 
 ![Full Breadboard Prototype](images/Full-Prototype.jpg)
 
+Turning this into a usable product requires the following PCB routing diagram:
+
+![PCB Routing Diagram](images/PCB-Schematics.png)
+
 And finally, here is what the prototype circuit on a perforated circuit board looks like:
 
 ![PCB Prototype Top](images/PCB-top.jpg)
