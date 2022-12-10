@@ -269,7 +269,7 @@ namespace ASCOM.DarkSkyGeek
                         bleCharacteristic = null;
                         bleDevice?.Dispose();
                         bleDevice = null;
-                        throw new ASCOM.NotConnectedException("Failed to connect");
+                        throw new ASCOM.DriverException("Failed to connect");
                     }
                 }
                 else
@@ -623,6 +623,10 @@ namespace ASCOM.DarkSkyGeek
         private async Task ConnectToDevice()
         {
             bleDevice = await BluetoothLEDevice.FromIdAsync(bleDeviceId);
+            if (bleDevice == null)
+            {
+                throw new ASCOM.DriverException("Could not connect to device. Is it powered on?");
+            }
 
             GattDeviceServicesResult servicesResult = await bleDevice.GetGattServicesAsync(BluetoothCacheMode.Uncached);
             if (servicesResult.Status == GattCommunicationStatus.Success)
