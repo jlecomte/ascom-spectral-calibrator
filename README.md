@@ -164,11 +164,11 @@ Here is what the prototype circuit looks like:
 
 ![Breadboard Prototype](images/Prototype-Breadboard-Only.jpg)
 
-**Note:** There is no gate resistor on the photograph above, but it is generally _good practice_ to have one, which is why I included one in the schematics above. A 1KΩ resistor will work fine. The pull down resistor is absolutely essential, however. Use a 1KΩ resistor there too.
-
 Here is the full prototype, showing the EL inverter and the bulb neatly nested inside a 3D printed enclosure:
 
 ![Full Breadboard Prototype](images/Full-Prototype.jpg)
+
+**Note:** There is no gate resistor on the two photographs above, but it is generally _good practice_ to have one for a variety of reasons. In our case, since we are switching the MOSFET at low frequency, the only real reason we might want to use a gate resistor is to limit the peak current drawn from the GPIO pin when turning on the MOSFET (remember: the gate on a MOSFET acts as a strong capacitor) to a level the MCU can handle without frying. In practice, it seems to work fine without one, but just to be safe, I included a 1KΩ gate resistor in the schematics above, and it is in the photographs below as well. A 1KΩ pulldown resistor is absolutely essential, however, because the MOSFET gate needs a way to discharge upon turning it off...
 
 Turning this into a usable product requires the following PCB routing diagram:
 
