@@ -156,9 +156,13 @@ The firmware was written specifically for, and tested with a genuine Arduino Nan
 
 Here is a 3D rendering of the enclosure:
 
-![3D Rendering](images/Enclosure-3D-Model.png)
+![3D Rendering of enclosure](images/Enclosure-3D-Model.png)
 
-The [FreeCAD](https://www.freecadweb.org/) 3D model can be found in the `3D_Files/` directory, in case you want to tweak it. I also generated the STL files, which you will find in the `3D_Files/STL/` directory. Those can be imported into your slicer.
+The FreeCAD model is `3D_Files/Enclosure.FCStd`, in case you want to tweak it. I also generated the STL files, which you will find in the `3D_Files/STL/` directory. Those can be imported into your slicer.
+
+Also note that I included the FreeCAD model for the micro bulb holder at `3D_Files/Micro_Bulb_Holder.FCStd`. Here is what that model looks like:
+
+![3D Rendering of micro bulb holder](images/Buld-Holder-3D-Model.png)
 
 ## Electronic Circuit
 
