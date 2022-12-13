@@ -1,24 +1,20 @@
 # ASCOM-Compatible Spectral Calibrator
 
-<!-- toc -->
-
 - [Introduction](#introduction)
 - [Demo](#demo)
 - [Finished Product](#finished-product)
 - [Pre-Requisites](#pre-requisites)
 - [Hardware](#hardware)
 - [ASCOM Driver](#ascom-driver)
-- [Downloading And Installing The Driver](#downloading-and-installing-the-driver)
-- [Compiling The Driver (For Developers Only)](#compiling-the-driver-for-developers-only)
-- [Screenshots](#screenshots)
+  - [Downloading And Installing The Driver](#downloading-and-installing-the-driver)
+  - [Compiling The Driver (For Developers Only)](#compiling-the-driver-for-developers-only)
+  - [Screenshots](#screenshots)
 - [Command Line ASCOM Client (Python)](#command-line-ascom-client-python)
 - [Arduino Firmware](#arduino-firmware)
-- [Microcontroller Compatibility](#microcontroller-compatibility)
-- [Compiling And Uploading The Firmware](#compiling-and-uploading-the-firmware)
+  - [Microcontroller Compatibility](#microcontroller-compatibility)
+  - [Compiling And Uploading The Firmware](#compiling-and-uploading-the-firmware)
 - [Enclosure](#enclosure)
 - [Electronic Circuit](#electronic-circuit)
-
-<!-- tocstop -->
 
 ## Introduction
 
