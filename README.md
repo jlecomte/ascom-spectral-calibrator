@@ -43,7 +43,7 @@ The following video shows a working prototype of this project:
 
 ## Finished Product
 
-TODO
+![Finished Product](images/Finished-Product.jpg)
 
 ## Pre-Requisites
 
@@ -107,9 +107,11 @@ Open Microsoft Visual Studio as an administrator (right-click on the Microsoft V
 
 The ASCOM driver provides a settings dialog which allows you to select the BLE device, once it has been detected. This is an operation you only really need to do once, because your selection is stored in your ASCOM profile. This must be done upon first connection, for obvious reasons.
 
-**Note:** It takes about 15 to 20 seconds for the BLE device enumeration to complete and the dropdown list to be enabled, so be patient :)
+**Note:** It takes about ~20 seconds for the BLE device enumeration to complete and the dropdown list to be enabled, so be patient :)
 
-**Note:** Occasionally, the device does not show up in the list. Power cycle the device and reopen the settings dialog.
+**Note:** Occasionally, the device does not show up in the list. Close the settings dialog, wait a little, and reopen it to start the BLE device enumeration again.
+
+**Note:** Occasionally, if you try to connect right after powering the device, you may get an error. Wait about a minute or so and try again, it should work. BLE devices sometimes cannot be connected to, or enumerated immediately. I don't know exactly what causes this, but I suspect it is Windows and the underlying PC hardware, and not the device, that is at fault here.
 
 ![Calibrator Settings Dialog](images/Calibrator-SettingsDialog.png)
 
@@ -152,7 +154,11 @@ The firmware was written specifically for, and tested with a genuine Arduino Nan
 
 ## Enclosure
 
-TODO
+Here is a 3D rendering of the enclosure:
+
+![3D Rendering](images/Enclosure-3D-Model.png)
+
+The [FreeCAD](https://www.freecadweb.org/) 3D model can be found in the `3D_Files/` directory, in case you want to tweak it. I also generated the STL files, which you will find in the `3D_Files/STL/` directory. Those can be imported into your slicer.
 
 ## Electronic Circuit
 
@@ -179,3 +185,7 @@ And finally, here is what the prototype circuit on a perforated circuit board lo
 ![PCB Prototype Top](images/PCB-top.jpg)
 
 ![PCB Prototype Bottom](images/PCB-bottom.jpg)
+
+And here is the PCB attached to the enclosure, using 4 M2 screws:
+
+![PCB Prototype Inside Enclosure](images/PCB-inside-enclosure.jpg)
