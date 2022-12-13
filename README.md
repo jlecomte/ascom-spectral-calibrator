@@ -150,7 +150,7 @@ The firmware was written specifically for, and tested with a genuine Arduino Nan
 * Open the Arduino IDE, and using the Boards Manager, install the `Arduino Mbed OS Nano Boards by Arduino`, which provides support for the Arduino Nano 33 BLE.
 * Finally, connect your Seeeduino board to your computer (make sure you use a USB-C cable that supports data and not just power!), open the sketch file located at `Arduino_Firmware\Arduino_Firmware.ino`, and click on the `Upload` button in the toolbar.
 
-**Note:** Make sure that the Arduino board is not connected to the MINI360 when you connect the Arduino to your computer because these little buck converters do not like to have a voltage applied to their output. They get very hot, and it smells like something is burning...
+**Note:** Make sure that the Arduino board is not connected to the MINI360 when you connect the Arduino to your computer because these little buck converters do not like to have a voltage applied to their output. They get very hot, and it smells like something is burning... That is why there is a jumper on the PCB, so that you can temporarily disconnect the Arduino from the buck converter.
 
 ## Enclosure
 
