@@ -58,7 +58,7 @@ The following are just suggestions... Also, over time, some of the links may no 
 
 * [Arduino Nano 33 BLE](https://store.arduino.cc/products/arduino-nano-33-ble)
 * [IRF520N MOSFET](https://www.amazon.com/dp/B082J3FNJS)
-* 1KΩ resistor (get yourself an assortment of resistors, like [this one](https://www.amazon.com/dp/B08FD1XVL6))
+* A few resistors (get yourself an assortment of resistors, like [this one](https://www.amazon.com/dp/B08FD1XVL6))
 * [MINI360 buck converter](https://www.amazon.com/dp/B07T7L51ZW)
 * [Perforated Circuit Board](https://www.amazon.com/dp/B07NM68FXK)
 * [DC Power Jack](https://www.amazon.com/dp/B01N8VV78D)
@@ -67,7 +67,7 @@ The following are just suggestions... Also, over time, some of the links may no 
 * [Assortment of small metric screws, nuts, and washers](https://www.amazon.com/dp/B08JCKH31Q)
 * [22AWG solid core electrical wires](https://www.amazon.com/dp/B088KQFHV7)
 * [12V DC EL wire inverter](https://www.amazon.com/dp/B08Q7CNZ7F)
-* [Neon bulbs](https://www.amazon.com/dp/B07CPY6TM5) — You may also experiment with the small gas-discharge bulb embedded inside ballast starters used to light up fluorescent lights...
+* [Neon bulbs](https://www.amazon.com/dp/B07CPY6TM5). You may also experiment with the small gas-discharge bulb embedded inside ballast starters used to light up fluorescent lights. Either way, you will need to solder a resistor, between 20kΩ and 50kΩ, to the bulb since the output voltage is a little over 100V.
 
 ## ASCOM Driver
 
@@ -131,7 +131,7 @@ C:> calibrator.py dutycycle --help
 C:> calibrator.py dutycycle 25
 ```
 
-**Note:** The argument passed to the `dutycycle` command is a whole percentage, and must therefore be an integer between `0` and `100`, where `0` means "always off", and `100` means "always on". Any value in between will cause the device to blink with a period of 1 minute. So, a value of `25` means that the device will be _off_ for 45 seconds, and _on__ for 15 seconds.
+**Note:** The argument passed to the `dutycycle` command is a whole percentage, and must therefore be an integer between `0` and `100`, where `0` means "always off", and `100` means "always on". Any value in between will cause the device to blink with a period of 1 minute. So, a value of `25` means that the device will be _off_ for 45 seconds, and _on_ for 15 seconds.
 
 **Note:** You can stop the _on_/_off_ cycle by simply turning the calibrator _off_.
 
