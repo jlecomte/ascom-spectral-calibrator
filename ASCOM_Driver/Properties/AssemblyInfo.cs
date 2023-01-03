@@ -11,8 +11,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("DarkSkyGeek’s Spectral Calibrator")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Copyright © 2022 - Present, Julien Lecomte - All Rights Reserved")]
-[assembly: AssemblyCopyright("Copyright © 2022 The ASCOM Initiative")]
+[assembly: AssemblyProduct("DarkSkyGeek’s Spectral Calibrator")]
+[assembly: AssemblyCopyright("Copyright © 2022 - Present, Julien Lecomte - All Rights Reserved")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
