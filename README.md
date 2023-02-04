@@ -34,7 +34,7 @@ This device accomplishes these two goals in one neat package. It only requires a
 
 The following video shows a working prototype of this project:
 
-[![YouTube video showing a working prototype of this project](images/YouTube-Prototype-Demo-Thumbnail.jpg)](https://youtu.be/eS6xX8gLDxU)
+[![YouTube video showing a working prototype of this project](images/YouTube-Prototype-Demo-Thumbnail.jpg)](https://youtu.be/GdbAIkDWJys)
 
 ## Finished Product
 
