@@ -16,10 +16,10 @@
 // #define DEBUG
 
 // Bluetooth® Low Energy LED Service
-BLEService calibratorService("f2d9de7d-6a59-40a3-bb7f-0c31970529bf");
+BLEService calibratorService("79f465db-72b2-4d52-91e0-be18403ee589");
 
 // Bluetooth® Low Energy LED Switch Characteristic - custom 128-bit UUID, read and writable by the central device
-BLEShortCharacteristic switchCharacteristic("f2d9de7d-6a59-40a3-bb7f-0c31970529bf", BLERead | BLEWrite);
+BLEShortCharacteristic switchCharacteristic("b4335a57-58d3-414e-9fd1-43b4d6bf72de", BLERead | BLEWrite);
 
 const int controlPin = 8;
 

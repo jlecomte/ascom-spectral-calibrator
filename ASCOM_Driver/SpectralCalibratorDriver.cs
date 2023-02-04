@@ -8,10 +8,12 @@ using ASCOM.DeviceInterface;
 using ASCOM.Utilities;
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
+using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Storage.Streams;
 
@@ -47,18 +49,9 @@ namespace ASCOM.DarkSkyGeek
         private const string traceStateProfileName = "Trace Level";
         private const string traceStateDefault = "false";
 
-        private const string bleDeviceIdProfileName = "BLE Device ID";
-        private const string bleDeviceIdDefault = "";
-
-        private const string bleDeviceNameProfileName = "BLE Device Name";
-        private const string bleDeviceNameDefault = "";
-
-        // Variables to hold the current device configuration
-        internal string bleDeviceId = string.Empty;
-        internal string bleDeviceName = string.Empty;
-
-        // Constants
-        private Guid BLE_UUID = new Guid("f2d9de7d-6a59-40a3-bb7f-0c31970529bf");
+        // Constants shared with the Arduino firmware...
+        private Guid BLE_SERVICE_UUID = new Guid("79f465db-72b2-4d52-91e0-be18403ee589");
+        private Guid BLE_CHARACTERISTIC_UUID = new Guid("b4335a57-58d3-414e-9fd1-43b4d6bf72de");
 
         private const byte CALIBRATOR_OFF = 0x00;
         private const byte CALIBRATOR_ON  = 0x01;
@@ -259,7 +252,7 @@ namespace ASCOM.DarkSkyGeek
                 {
                     LogMessage("Connected Set", "Connecting...");
                     Task t = ConnectToDevice();
-                    t.Wait();
+                    t.Wait(15000); // Wait up to 15 seconds...
                     if (bleDevice != null && bleCharacteristic != null)
                     {
                         connectedState = true;
@@ -620,38 +613,71 @@ namespace ASCOM.DarkSkyGeek
         /// Attempts to connect to the BLE device, and sets the `bleDevice` and
         /// `bleCharacteristic` class instance members in case of success.
         /// </summary>
-        private async Task ConnectToDevice()
+        private Task ConnectToDevice()
         {
-            bleDevice = await BluetoothLEDevice.FromIdAsync(bleDeviceId);
-            if (bleDevice == null)
-            {
-                throw new ASCOM.DriverException("Could not connect to device. Is it powered on?");
-            }
+            var tcs = new TaskCompletionSource<bool>();
 
-            GattDeviceServicesResult servicesResult = await bleDevice.GetGattServicesAsync(BluetoothCacheMode.Uncached);
-            if (servicesResult.Status == GattCommunicationStatus.Success)
+            // You cannot connect to a BLE device without doing an enumeration.
+            // That is why in version 1.0, the connection was not working reliably.
+            // Starting with version 1.1, we use the BluetoothLEAdvertisementWatcher
+            // to ensure that our device is powered up and advertising before attempting
+            // a connection. The DeviceWatcher would also work, but it is much slower!
+
+            var watcher = new BluetoothLEAdvertisementWatcher
             {
-                var services = servicesResult.Services;
-                foreach (var service in services)
+                ScanningMode = BluetoothLEScanningMode.Active
+            };
+
+            watcher.Received += async (w, args) =>
+            {
+                var uuids = args.Advertisement.ServiceUuids;
+                foreach (var uuid in uuids)
                 {
-                    if (service.Uuid.Equals(BLE_UUID))
+                    if (uuid.Equals(BLE_SERVICE_UUID))
                     {
-                        var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
-                        if (characteristicsResult.Status == GattCommunicationStatus.Success)
+                        watcher.Stop();
+
+                        Debug.WriteLine("Discovered the spectral calibrator device. Attempting to connect...");
+
+                        bleDevice = await BluetoothLEDevice.FromBluetoothAddressAsync(args.BluetoothAddress);
+                        if (bleDevice == null)
                         {
-                            var characteristics = characteristicsResult.Characteristics;
-                            foreach (var characteristic in characteristics)
+                            tcs.SetException(new ASCOM.DriverException("Could not connect to device."));
+                        }
+
+                        GattDeviceServicesResult servicesResult = await bleDevice.GetGattServicesAsync(BluetoothCacheMode.Uncached);
+                        if (servicesResult.Status == GattCommunicationStatus.Success)
+                        {
+                            var services = servicesResult.Services;
+                            foreach (var service in services)
                             {
-                                if (characteristic.Uuid.Equals(BLE_UUID))
+                                if (service.Uuid.Equals(BLE_SERVICE_UUID))
                                 {
-                                    bleCharacteristic = characteristic;
-                                    return;
+                                    var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
+                                    if (characteristicsResult.Status == GattCommunicationStatus.Success)
+                                    {
+                                        var characteristics = characteristicsResult.Characteristics;
+                                        foreach (var characteristic in characteristics)
+                                        {
+                                            if (characteristic.Uuid.Equals(BLE_CHARACTERISTIC_UUID))
+                                            {
+                                                bleCharacteristic = characteristic;
+                                                Debug.WriteLine("Spectral calibrator device connected!");
+                                                tcs.SetResult(true);
+                                                return;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
+            };
+
+            watcher.Start();
+
+            return tcs.Task;
         }
 
         /// <summary>
@@ -751,8 +777,6 @@ namespace ASCOM.DarkSkyGeek
                 try
                 {
                     tl.Enabled = Convert.ToBoolean(driverProfile.GetValue(driverID, traceStateProfileName, string.Empty, traceStateDefault));
-                    bleDeviceId = driverProfile.GetValue(driverID, bleDeviceIdProfileName, string.Empty, bleDeviceIdDefault);
-                    bleDeviceName = driverProfile.GetValue(driverID, bleDeviceNameProfileName, string.Empty, bleDeviceNameDefault);
                 }
                 catch (Exception e)
                 {
@@ -770,8 +794,6 @@ namespace ASCOM.DarkSkyGeek
             {
                 driverProfile.DeviceType = "Switch";
                 driverProfile.WriteValue(driverID, traceStateProfileName, tl.Enabled.ToString());
-                driverProfile.WriteValue(driverID, bleDeviceIdProfileName, bleDeviceId);
-                driverProfile.WriteValue(driverID, bleDeviceNameProfileName, bleDeviceName);
             }
         }
 

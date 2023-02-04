@@ -8,7 +8,6 @@
 - [ASCOM Driver](#ascom-driver)
   - [Downloading And Installing The Driver](#downloading-and-installing-the-driver)
   - [Compiling The Driver (For Developers Only)](#compiling-the-driver-for-developers-only)
-  - [Screenshots](#screenshots)
 - [Command Line ASCOM Client (Python)](#command-line-ascom-client-python)
 - [Arduino Firmware](#arduino-firmware)
   - [Microcontroller Compatibility](#microcontroller-compatibility)
@@ -98,18 +97,6 @@ Types registered successfully
 ### Compiling The Driver (For Developers Only)
 
 Open Microsoft Visual Studio as an administrator (right-click on the Microsoft Visual Studio shortcut, and select "Run as administrator"). This is required because when building the code, by default, Microsoft Visual Studio will register the compiled COM components, and this operation requires special privileges (Note: This is something you can disable in the project settings...) Then, open the solution (`ASCOM_Driver\ASCOM.DarkSkyGeek.SpectralCalibrator.sln`), change the solution configuration to `Release` (in the toolbar), open the `Build` menu, and click on `Build Solution`. As long as you have properly installed all the required dependencies, the build should succeed and the ASCOM driver will be registered on your system. The binary file generated will be `ASCOM_Driver\bin\Release\ASCOM.DarkSkyGeek.SpectralCalibrator.dll`. You may also download this file from the [Releases page](https://github.com/jlecomte/ascom-spectral-calibrator/releases).
-
-### Screenshots
-
-The ASCOM driver provides a settings dialog which allows you to select the BLE device, once it has been detected. This is an operation you only really need to do once, because your selection is stored in your ASCOM profile. This must be done upon first connection, for obvious reasons.
-
-**Note:** It takes about ~20 seconds for the BLE device enumeration to complete and the dropdown list to be enabled, so be patient :)
-
-**Note:** Occasionally, the device does not show up in the list. Close the settings dialog, wait a little, and reopen it to start the BLE device enumeration again.
-
-**Note:** Occasionally, if you try to connect right after powering the device, you may get an error. Wait about a minute or so and try again, it should work. BLE devices sometimes cannot be connected to, or enumerated immediately. I don't know exactly what causes this, but I suspect it is Windows and the underlying PC hardware, and not the device, that is at fault here.
-
-![Calibrator Settings Dialog](images/Calibrator-SettingsDialog.png)
 
 ## Command Line ASCOM Client (Python)
 
