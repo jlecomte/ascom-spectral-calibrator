@@ -1,19 +1,20 @@
 # ASCOM-Compatible Spectral Calibrator
 
-- [Introduction](#introduction)
-- [Demo](#demo)
-- [Finished Product](#finished-product)
-- [Pre-Requisites](#pre-requisites)
-- [Hardware](#hardware)
-- [ASCOM Driver](#ascom-driver)
-  - [Downloading And Installing The Driver](#downloading-and-installing-the-driver)
-  - [Compiling The Driver (For Developers Only)](#compiling-the-driver-for-developers-only)
-- [Command Line ASCOM Client (Python)](#command-line-ascom-client-python)
-- [Arduino Firmware](#arduino-firmware)
-  - [Microcontroller Compatibility](#microcontroller-compatibility)
-  - [Compiling And Uploading The Firmware](#compiling-and-uploading-the-firmware)
-- [Enclosure](#enclosure)
-- [Electronic Circuit](#electronic-circuit)
+* [Introduction](#introduction)
+* [Demo](#demo)
+* [Finished Product](#finished-product)
+* [Pre-Requisites](#pre-requisites)
+* [Hardware](#hardware)
+* [ASCOM Driver](#ascom-driver)
+  + [Downloading And Installing The Driver](#downloading-and-installing-the-driver)
+  + [Compiling The Driver (For Developers Only)](#compiling-the-driver-for-developers-only)
+* [Command Line ASCOM Client (Python)](#command-line-ascom-client-python)
+* [Arduino Firmware](#arduino-firmware)
+  + [Microcontroller Compatibility](#microcontroller-compatibility)
+  + [Compiling And Uploading The Firmware](#compiling-and-uploading-the-firmware)
+* [Enclosure](#enclosure)
+* [Electronic Circuit](#electronic-circuit)
+* [Future Improvements](#future-improvements)
 
 ## Introduction
 
@@ -176,3 +177,7 @@ And finally, here is what the prototype circuit on a perforated circuit board lo
 And here is the PCB attached to the enclosure, using 4 M2 screws:
 
 ![PCB Prototype Inside Enclosure](images/PCB-inside-enclosure.jpg)
+
+## Future Improvements
+
+The firmware uses the `ArduinoBLE` library. That library does not support pairing/bonding. To connect to the device, the ASCOM driver simply watches for BLE advertisement packets, and once one has been received by the computer that contains a known service UUID, I attempt to connect to that service. While this simplistic implementation works very well, it can lead to connecting to the wrong device if several such devices are in the same location. In future BLE-enabled devices, I will likely use an [Adafruit Feather device](https://www.adafruit.com/product/4062) and [Adafrruit libraries](https://github.com/adafruit/Adafruit_nRF52_Arduino/), which would allow me to pair/bond the device before connecting to it.
