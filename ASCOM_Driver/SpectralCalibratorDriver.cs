@@ -28,7 +28,7 @@ namespace ASCOM.DarkSkyGeek
     //
 
     /// <summary>
-    /// DarkSkyGeek’s Spectral Calibrator ASCOM Switch Driver.
+    /// DarkSkyGeekï¿½s Spectral Calibrator ASCOM Switch Driver.
     /// </summary>
     [Guid("73085480-9405-4674-8e83-391835721abe")]
     [ClassInterface(ClassInterfaceType.None)]
@@ -43,15 +43,22 @@ namespace ASCOM.DarkSkyGeek
         /// <summary>
         /// Driver description that displays in the ASCOM Chooser.
         /// </summary>
-        private const string deviceName = "DarkSkyGeek’s Spectral Calibrator";
+        private const string deviceName = "DarkSkyGeekâ€™s Spectral Calibrator";
 
         // Constants used for Profile persistence
         private const string traceStateProfileName = "Trace Level";
         private const string traceStateDefault = "false";
 
+        private const string bleDeviceAddressProfileName = "BLE Device Address";
+        private const ulong bleDeviceAddressDefault = 0;
+
+        // Variables to hold the current device configuration
+        internal ulong bleDeviceAddress = bleDeviceAddressDefault;
+
         // Constants shared with the Arduino firmware...
-        private Guid BLE_SERVICE_UUID = new Guid("79f465db-72b2-4d52-91e0-be18403ee589");
-        private Guid BLE_CHARACTERISTIC_UUID = new Guid("b4335a57-58d3-414e-9fd1-43b4d6bf72de");
+        // These are static as they may be accessed from the setup dialog...
+        public static Guid BLE_SERVICE_UUID = new Guid("79f465db-72b2-4d52-91e0-be18403ee589");
+        public static Guid BLE_CHARACTERISTIC_UUID = new Guid("b4335a57-58d3-414e-9fd1-43b4d6bf72de");
 
         private const byte CALIBRATOR_OFF = 0x00;
         private const byte CALIBRATOR_ON  = 0x01;
@@ -250,6 +257,11 @@ namespace ASCOM.DarkSkyGeek
 
                 if (value)
                 {
+                    if (bleDeviceAddress == bleDeviceAddressDefault)
+                    {
+                        throw new ASCOM.DriverException("You have not yet paired a device");
+                    }
+
                     LogMessage("Connected Set", "Connecting...");
                     Task t = ConnectToDevice();
                     t.Wait(15000); // Wait up to 15 seconds...
@@ -630,42 +642,38 @@ namespace ASCOM.DarkSkyGeek
 
             watcher.Received += async (w, args) =>
             {
-                var uuids = args.Advertisement.ServiceUuids;
-                foreach (var uuid in uuids)
+                if (args.BluetoothAddress == bleDeviceAddress)
                 {
-                    if (uuid.Equals(BLE_SERVICE_UUID))
+                    watcher.Stop();
+
+                    Debug.WriteLine("Discovered the spectral calibrator device. Attempting to connect...");
+
+                    bleDevice = await BluetoothLEDevice.FromBluetoothAddressAsync(args.BluetoothAddress);
+                    if (bleDevice == null)
                     {
-                        watcher.Stop();
+                        tcs.SetException(new ASCOM.DriverException("Could not connect to device."));
+                    }
 
-                        Debug.WriteLine("Discovered the spectral calibrator device. Attempting to connect...");
-
-                        bleDevice = await BluetoothLEDevice.FromBluetoothAddressAsync(args.BluetoothAddress);
-                        if (bleDevice == null)
+                    GattDeviceServicesResult servicesResult = await bleDevice.GetGattServicesAsync(BluetoothCacheMode.Uncached);
+                    if (servicesResult.Status == GattCommunicationStatus.Success)
+                    {
+                        var services = servicesResult.Services;
+                        foreach (var service in services)
                         {
-                            tcs.SetException(new ASCOM.DriverException("Could not connect to device."));
-                        }
-
-                        GattDeviceServicesResult servicesResult = await bleDevice.GetGattServicesAsync(BluetoothCacheMode.Uncached);
-                        if (servicesResult.Status == GattCommunicationStatus.Success)
-                        {
-                            var services = servicesResult.Services;
-                            foreach (var service in services)
+                            if (service.Uuid.Equals(BLE_SERVICE_UUID))
                             {
-                                if (service.Uuid.Equals(BLE_SERVICE_UUID))
+                                var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
+                                if (characteristicsResult.Status == GattCommunicationStatus.Success)
                                 {
-                                    var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
-                                    if (characteristicsResult.Status == GattCommunicationStatus.Success)
+                                    var characteristics = characteristicsResult.Characteristics;
+                                    foreach (var characteristic in characteristics)
                                     {
-                                        var characteristics = characteristicsResult.Characteristics;
-                                        foreach (var characteristic in characteristics)
+                                        if (characteristic.Uuid.Equals(BLE_CHARACTERISTIC_UUID))
                                         {
-                                            if (characteristic.Uuid.Equals(BLE_CHARACTERISTIC_UUID))
-                                            {
-                                                bleCharacteristic = characteristic;
-                                                Debug.WriteLine("Spectral calibrator device connected!");
-                                                tcs.SetResult(true);
-                                                return;
-                                            }
+                                            bleCharacteristic = characteristic;
+                                            Debug.WriteLine("Spectral calibrator device connected!");
+                                            tcs.SetResult(true);
+                                            return;
                                         }
                                     }
                                 }
@@ -777,6 +785,7 @@ namespace ASCOM.DarkSkyGeek
                 try
                 {
                     tl.Enabled = Convert.ToBoolean(driverProfile.GetValue(driverID, traceStateProfileName, string.Empty, traceStateDefault));
+                    bleDeviceAddress = ulong.Parse(driverProfile.GetValue(driverID, bleDeviceAddressProfileName, string.Empty, bleDeviceAddressDefault.ToString()));
                 }
                 catch (Exception e)
                 {
@@ -794,6 +803,7 @@ namespace ASCOM.DarkSkyGeek
             {
                 driverProfile.DeviceType = "Switch";
                 driverProfile.WriteValue(driverID, traceStateProfileName, tl.Enabled.ToString());
+                driverProfile.WriteValue(driverID, bleDeviceAddressProfileName, bleDeviceAddress.ToString());
             }
         }
 

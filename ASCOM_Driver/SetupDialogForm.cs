@@ -9,9 +9,10 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 using System.Diagnostics;
-using Windows.Devices.Bluetooth;
-using Windows.Devices.Enumeration;
-using System.Collections.Generic;
+using Windows.Devices.Bluetooth.Advertisement;
+using System.Linq;
+using System.Drawing;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ASCOM.DarkSkyGeek
 {
@@ -21,8 +22,8 @@ namespace ASCOM.DarkSkyGeek
     public partial class SetupDialogForm : Form
     {
         SpectralCalibrator calibrator;
-        DeviceWatcher deviceWatcher;
-        Dictionary<string, string> devices = new Dictionary<string, string>();
+        BluetoothLEAdvertisementWatcher watcher;
+        ulong bleDeviceAddress;
 
         public SetupDialogForm(SpectralCalibrator calibrator)
         {
@@ -30,9 +31,20 @@ namespace ASCOM.DarkSkyGeek
             this.calibrator = calibrator;
         }
 
+        private string getFormattedBluetoothAddress(ulong address)
+        {
+            string hexValue = address.ToString("X");
+            if (hexValue.Length == 12)
+            {
+                return hexValue.Insert(10, ":").Insert(8, ":").Insert(6, ":").Insert(4, ":").Insert(2, ":");
+            }
+            throw new Exception("Invalid Bluetooth Address: " + address);
+        }
+
         private void cmdOK_Click(object sender, EventArgs e)
         {
             calibrator.tl.Enabled = chkTrace.Checked;
+            calibrator.bleDeviceAddress = bleDeviceAddress;
         }
 
         private void cmdCancel_Click(object sender, EventArgs e)
@@ -60,6 +72,86 @@ namespace ASCOM.DarkSkyGeek
         private void SetupDialogForm_Load(object sender, EventArgs e)
         {
             chkTrace.Checked = calibrator.tl.Enabled;
+            bleDeviceAddress = calibrator.bleDeviceAddress;
+
+            // Adjust the position of the label so it looks decent...
+            pairedDeviceAddrValue.Location = new Point(pairedDeviceAddrLbl.Location.X + pairedDeviceAddrLbl.Width, pairedDeviceAddrLbl.Location.Y);
+
+            try
+            {
+                pairedDeviceAddrValue.Text = getFormattedBluetoothAddress(calibrator.bleDeviceAddress);
+                pairedDeviceAddrValue.ForeColor = System.Drawing.Color.Green;
+            }
+            catch (Exception)
+            {
+                pairedDeviceAddrValue.Text = "No device paired";
+                pairedDeviceAddrValue.ForeColor = System.Drawing.Color.Red;
+            }
+
+            watcher = new BluetoothLEAdvertisementWatcher
+            {
+                ScanningMode = BluetoothLEScanningMode.Active
+            };
+
+            watcher.Received += (w, args) =>
+            {
+                var uuids = args.Advertisement.ServiceUuids;
+                foreach (var uuid in uuids)
+                {
+                    if (uuid.Equals(SpectralCalibrator.BLE_SERVICE_UUID))
+                    {
+                        ulong address = args.BluetoothAddress;
+
+                        devicesListBox.Invoke(new Action(() =>
+                        {
+                            // Was this device previously added to the list? Let's find out...
+                            bool found = devicesListBox.Items.Cast<ListBoxItem>().Any(x => x.BluetoothAddress == address);
+
+                            // If not, add it to the list so it can be selected:
+                            if (!found)
+                            {
+                                ListBoxItem item = new ListBoxItem
+                                {
+                                    Text = getFormattedBluetoothAddress(address),
+                                    BluetoothAddress = address
+                                };
+                                devicesListBox.Items.Add(item);
+                            }
+                        }));
+                    }
+                }
+            };
+
+            watcher.Start();
+        }
+
+        private void SetupDialogForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            watcher.Stop();
+        }
+
+        private void devicesListBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            deviceSelectionBtn.Enabled = devicesListBox.SelectedIndex != -1;
+        }
+
+        private void deviceSelectionBtn_Click(object sender, EventArgs e)
+        {
+            ListBoxItem item = devicesListBox.SelectedItem as ListBoxItem;
+            pairedDeviceAddrValue.Text = item.Text;
+            bleDeviceAddress = item.BluetoothAddress;
+            pairedDeviceAddrValue.ForeColor = System.Drawing.Color.Green;
+        }
+    }
+
+    class ListBoxItem
+    {
+        public string Text { get; set; }
+        public ulong BluetoothAddress { get; set; }
+
+        public override string ToString()
+        {
+            return Text;
         }
     }
 }
