@@ -39,7 +39,9 @@ The following video shows a working prototype of this project:
 
 ## Finished Product
 
-![Finished Product](images/Finished-Product.jpg)
+![Control Box](images/Finished-Product.jpg)
+
+![Bulb Holder](images/Bulb-Holder.jpg)
 
 ## Pre-Requisites
 
