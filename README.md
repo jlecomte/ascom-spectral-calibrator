@@ -127,7 +127,7 @@ A simply Python script is included in the `ASCOM_Client/` directory. In ordet to
 C:> python -m pip install pypiwin32
 ```
 
-Next, make sure that your ASCOM profile already has a BLE device selected. The easiest way to do this is to use an application like N.I.N.A. In the "Equipment" tab, open the "Switch" tab, and select the "DarkSkyGeek Spectral Calibrator" device. Then, click on the button with the gear icon to open the driver settings dialog. Wait for the BLE device enumeration to complete, select the `DSG-Calibration-Lamp` device in the dropdown list, and click OK. Your selection will be saved in your ASCOM profile, so you don't need to do this again.
+Next, make sure that your ASCOM profile already has a spectral calibrator "paired" with your PC. Refer to the [Screenshots And User Manual](#screenshots-and-user-manual) section above to find out how to do this.
 
 Finally, you can run this script. Here are a few examples:
 
