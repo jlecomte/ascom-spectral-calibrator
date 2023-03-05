@@ -88,46 +88,58 @@ namespace ASCOM.DarkSkyGeek
                 pairedDeviceAddrValue.ForeColor = System.Drawing.Color.Red;
             }
 
-            watcher = new BluetoothLEAdvertisementWatcher
+            if (calibrator.Connected)
             {
-                ScanningMode = BluetoothLEScanningMode.Active
-            };
-
-            watcher.Received += (w, args) =>
+                chkTrace.Enabled = false;
+                devicesListBox.Enabled = false;
+                deviceSelectionBtn.Enabled = false;
+            }
+            else
             {
-                var uuids = args.Advertisement.ServiceUuids;
-                foreach (var uuid in uuids)
+                watcher = new BluetoothLEAdvertisementWatcher
                 {
-                    if (uuid.Equals(SpectralCalibrator.BLE_SERVICE_UUID))
+                    ScanningMode = BluetoothLEScanningMode.Active
+                };
+
+                watcher.Received += (w, args) =>
+                {
+                    var uuids = args.Advertisement.ServiceUuids;
+                    foreach (var uuid in uuids)
                     {
-                        ulong address = args.BluetoothAddress;
-
-                        devicesListBox.Invoke(new Action(() =>
+                        if (uuid.Equals(SpectralCalibrator.BLE_SERVICE_UUID))
                         {
-                            // Was this device previously added to the list? Let's find out...
-                            bool found = devicesListBox.Items.Cast<ListBoxItem>().Any(x => x.BluetoothAddress == address);
+                            ulong address = args.BluetoothAddress;
 
-                            // If not, add it to the list so it can be selected:
-                            if (!found)
+                            devicesListBox.Invoke(new Action(() =>
                             {
-                                ListBoxItem item = new ListBoxItem
-                                {
-                                    Text = getFormattedBluetoothAddress(address),
-                                    BluetoothAddress = address
-                                };
-                                devicesListBox.Items.Add(item);
-                            }
-                        }));
-                    }
-                }
-            };
+                                // Was this device previously added to the list? Let's find out...
+                                bool found = devicesListBox.Items.Cast<ListBoxItem>().Any(x => x.BluetoothAddress == address);
 
-            watcher.Start();
+                                // If not, add it to the list so it can be selected:
+                                if (!found)
+                                {
+                                    ListBoxItem item = new ListBoxItem
+                                    {
+                                        Text = getFormattedBluetoothAddress(address),
+                                        BluetoothAddress = address
+                                    };
+                                    devicesListBox.Items.Add(item);
+                                }
+                            }));
+                        }
+                    }
+                };
+
+                watcher.Start();
+            }
         }
 
         private void SetupDialogForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            watcher.Stop();
+            if (watcher != null)
+            {
+                watcher.Stop();
+            }
         }
 
         private void devicesListBox_SelectedIndexChanged(object sender, EventArgs e)
