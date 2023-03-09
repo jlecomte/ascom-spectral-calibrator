@@ -56,7 +56,7 @@ The following video shows a working prototype of this project:
 
 ## Hardware
 
-The following are just suggestions... Also, over time, some of the links may no longer work...
+**Note:** The following are just suggestions! Some of these links will not work if you access them from outside the USA. However, using the name and the photograph below, you should (hopefully) be able to find similar items elsewhere. Also, over time, some of the links may no longer work...
 
 * [Arduino Nano 33 BLE](https://store.arduino.cc/products/arduino-nano-33-ble)
 * [IRF520N MOSFET](https://www.amazon.com/dp/B082J3FNJS)
@@ -70,6 +70,8 @@ The following are just suggestions... Also, over time, some of the links may no 
 * [22AWG solid core electrical wires](https://www.amazon.com/dp/B088KQFHV7)
 * [12V DC EL wire inverter](https://www.amazon.com/dp/B08Q7CNZ7F)
 * [Neon bulbs](https://www.amazon.com/dp/B07CPY6TM5). You may also experiment with the small gas-discharge bulb embedded inside ballast starters used to light up fluorescent lights. Either way, you will need to solder a resistor, between 20kΩ and 50kΩ, to the bulb since the output voltage is a little over 100V.
+
+![Hardware necessary to build this project](images/hardware.png)
 
 ## ASCOM Driver
 
