@@ -23,7 +23,7 @@ In order for a spectrum to be useful, it must be accurately calibrated. Spectrog
 
 This project covers the design and the implementation of an ASCOM-compatible spectral calibrator. A spectral calibrator usually makes use of a [gas-discharge lamp](https://en.wikipedia.org/wiki/Gas-discharge_lamp) in order to provide a set of well known emission lines that software such as specINTI can then use to calculate the coefficients of the polynomial used to characterize the spectral dispersion of your particular spectrograph, which then allows it to extract a spectral profile from a 2D spectrum. Here is an example image of the 2D spectrum, surrounding the H⍺ line, of a star (β Lyr, also known as Sheliak, a famous Be star) and the superimposed emission lines of a neon bulb that was used for calibration:
 
-![2D spectrum of Sheliak and neon calibration lines](Images/shelyak+neon.jpg)
+![2D spectrum of Sheliak and neon calibration lines](images/shelyak+neon.jpg)
 
 It is extremely useful to be able to remotely turn the spectral calibrator _on_ or _off_ multiple times throughout the night. This can be done manually, using a remote-controlled power switch. But it is even more convenient to be able to control the spectral calibrator _programmatically_, for two reasons:
 
@@ -36,13 +36,13 @@ This device accomplishes these two goals in one neat package. It only requires a
 
 The following video shows a working prototype of this project:
 
-[![YouTube video showing a working prototype of this project](Images/YouTube-Prototype-Demo-Thumbnail.jpg)](https://youtu.be/GdbAIkDWJys)
+[![YouTube video showing a working prototype of this project](images/YouTube-Prototype-Demo-Thumbnail.jpg)](https://youtu.be/GdbAIkDWJys)
 
 ## Finished Product
 
-![Control Box](Images/Finished-Product.jpg)
+![Control Box](images/Finished-Product.jpg)
 
-![Bulb Holder](Images/Bulb-Holder.jpg)
+![Bulb Holder](images/Bulb-Holder.jpg)
 
 ## Pre-Requisites
 
@@ -88,11 +88,11 @@ Open Microsoft Visual Studio as an administrator (right-click on the Microsoft V
 
 Before you can connect to the spectral calibrator for the first time, you must select the appropriate Bluetooth device in the driver settings dialog. The driver will remember your selection, so this is a one-time operation. This step is necessary to ensure that, in the field, where there may be several such spectral calibrators nearby, you are connecting and controlling the right device. Here is what the driver settings dialog looks like the first time you open it. It listens for Bluetooth advertisement packets coming from spectral calibrator devices only.
 
-![Device settings dialog with no device selected](Images/screenshot-1.png)
+![Device settings dialog with no device selected](images/screenshot-1.png)
 
 Of course, the Bluetooth address will be meaningless to you, but that is not important. Click on a Bluetooth address, and click on the "Pair with selected device" button:
 
-![Device settings dialog with device selected](Images/screenshot-2.png)
+![Device settings dialog with device selected](images/screenshot-2.png)
 
 **Note:** This is not really Bluetooth pairing. It is merely device selection. But most users are familiar with the "Bluetooth pairing" terminology, so I used it, even if it is not perfectly accurate from a technical standpoint...
 
@@ -100,7 +100,7 @@ Don't forget to validate your choice by clicking on the green checkmark button a
 
 If you do this at home with only one spectral calibrator turned on, you should see only one Bluetooth address in the list, so that's easy. However, if you do this in the field, and there is another spectral calibrator nearby, you may see several Bluetooth addresses. Choose one, connect to it, and turn it on/off to identify which device you are connected to. If you happened to select the wrong device, disconnect it, open the driver settings dialog again, and choose another Bluetooth address (you will have remembered the Bluetooth address you connected to on the first try...) Simple! Of course, it's easier to do this at home when there is only one device showing in the list... Once the right device has been selected, you can finally connect to it, which will reveal an ASCOM switch device, here shown in N.I.N.A.'s UI:
 
-![Spectral calibrator swith in N.I.N.A.'s UI](Images/screenshot-3.png)
+![Spectral calibrator swith in N.I.N.A.'s UI](images/screenshot-3.png)
 
 ## Command Line ASCOM Client (Python)
 
@@ -143,43 +143,43 @@ The firmware was written specifically for, and tested with a genuine Arduino Nan
 
 Here is a 3D rendering of the enclosure:
 
-![3D Rendering of enclosure](Images/Enclosure-3D-Model.png)
+![3D Rendering of enclosure](images/Enclosure-3D-Model.png)
 
 The FreeCAD model is `3D_Files/Enclosure.FCStd`, in case you want to tweak it. I also generated the STL files, which you will find in the `3D_Files/STL/` directory. Those can be imported into your slicer.
 
 Also note that I included the FreeCAD model for the micro bulb holder at `3D_Files/Micro_Bulb_Holder.FCStd`. Here is what that model looks like:
 
-![3D Rendering of micro bulb holder](Images/Buld-Holder-3D-Model.png)
+![3D Rendering of micro bulb holder](images/Buld-Holder-3D-Model.png)
 
 ## Electronic Circuit
 
 The electronics circuit is fairly straightforward. I included a Fritzing file in the `Electronics/` folder. Here are the schematics:
 
-![Breadboard Schematics](Images/Breadboard-Schematics.png)
+![Breadboard Schematics](images/Breadboard-Schematics.png)
 
 Here is what the prototype circuit looks like:
 
-![Breadboard Prototype](Images/Prototype-Breadboard-Only.jpg)
+![Breadboard Prototype](images/Prototype-Breadboard-Only.jpg)
 
 Here is the full prototype, showing the EL inverter and the bulb neatly nested inside a 3D printed enclosure:
 
-![Full Breadboard Prototype](Images/Full-Prototype.jpg)
+![Full Breadboard Prototype](images/Full-Prototype.jpg)
 
 **Note:** There is no gate resistor on the two photographs above, but it is generally _good practice_ to have one for a variety of reasons. In our case, since we are switching the MOSFET at low frequency, the only real reason we might want to use a gate resistor is to limit the peak current drawn from the GPIO pin when turning on the MOSFET (remember: the gate on a MOSFET acts as a strong capacitor) to a level the MCU can handle without frying. In practice, it seems to work fine without one, but just to be safe, I included a 1KΩ gate resistor in the schematics above, and it is in the photographs below as well. A 1KΩ pulldown resistor is absolutely essential, however, because the MOSFET gate needs a way to discharge upon turning it off...
 
 Turning this into a usable product requires the following PCB routing diagram:
 
-![PCB Routing Diagram](Images/PCB-Schematics.png)
+![PCB Routing Diagram](images/PCB-Schematics.png)
 
 And finally, here is what the prototype circuit on a perforated circuit board looks like:
 
-![PCB Prototype Top](Images/PCB-top.jpg)
+![PCB Prototype Top](images/PCB-top.jpg)
 
-![PCB Prototype Bottom](Images/PCB-bottom.jpg)
+![PCB Prototype Bottom](images/PCB-bottom.jpg)
 
 And here is the PCB attached to the enclosure, using 4 M2 screws:
 
-![PCB Prototype Inside Enclosure](Images/PCB-inside-enclosure.jpg)
+![PCB Prototype Inside Enclosure](images/PCB-inside-enclosure.jpg)
 
 ## Frequently Asked Questions (FAQ)
 
