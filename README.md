@@ -64,17 +64,17 @@ The following video shows a working prototype of this project:
 **Note:** The following are just suggestions! Some of these links will not work if you access them from outside the USA. However, using the name and the photograph below, you should (hopefully) be able to find similar items elsewhere. Also, over time, some of the links may no longer work...
 
 * [Arduino Nano 33 BLE](https://store.arduino.cc/products/arduino-nano-33-ble)
-* [IRF520N MOSFET](https://www.amazon.com/dp/B082J3FNJS)
-* A few resistors (get yourself an assortment of resistors, like [this one](https://www.amazon.com/dp/B08FD1XVL6))
-* [MINI360 buck converter](https://www.amazon.com/dp/B07T7L51ZW)
-* [Perforated Circuit Board](https://www.amazon.com/dp/B07NM68FXK)
-* [DC Power Jack](https://www.amazon.com/dp/B01N8VV78D)
-* [Bench Power Supply](https://www.amazon.com/dp/B07GCJ5QHF)
-* [Threaded inserts for 3D printed parts](https://www.amazon.com/dp/B07VFZWWXY)
-* [Assortment of small metric screws, nuts, and washers](https://www.amazon.com/dp/B08JCKH31Q)
-* [22AWG solid core electrical wires](https://www.amazon.com/dp/B088KQFHV7)
-* [12V DC EL wire inverter](https://www.amazon.com/dp/B08Q7CNZ7F)
-* [Neon bulbs](https://www.amazon.com/dp/B07CPY6TM5). You may also experiment with the small gas-discharge bulb embedded inside ballast starters used to light up fluorescent lights. Either way, you will need to solder a resistor, between 20kΩ and 50kΩ, to the bulb since the output voltage is a little over 100V.
+* [IRF520N MOSFET](https://www.amazon.com/dp/B082J3FNJS?tag=darkskygeek-20)
+* A few resistors (get yourself an assortment of resistors, like [this one](https://www.amazon.com/dp/B08FD1XVL6?tag=darkskygeek-20))
+* [MINI360 buck converter](https://www.amazon.com/dp/B07T7L51ZW?tag=darkskygeek-20)
+* [Perforated Circuit Board](https://www.amazon.com/dp/B07NM68FXK?tag=darkskygeek-20)
+* [DC Power Jack](https://www.amazon.com/dp/B01N8VV78D?tag=darkskygeek-20)
+* [Bench Power Supply](https://www.amazon.com/dp/B07GCJ5QHF?tag=darkskygeek-20)
+* [Threaded inserts for 3D printed parts](https://www.amazon.com/dp/B07VFZWWXY?tag=darkskygeek-20)
+* [Assortment of small metric screws, nuts, and washers](https://www.amazon.com/dp/B08JCKH31Q?tag=darkskygeek-20)
+* [22AWG solid core electrical wires](https://www.amazon.com/dp/B088KQFHV7?tag=darkskygeek-20)
+* [12V DC EL wire inverter](https://www.amazon.com/dp/B08Q7CNZ7F?tag=darkskygeek-20)
+* [Neon bulbs](https://www.amazon.com/dp/B07CPY6TM5?tag=darkskygeek-20). You may also experiment with the small gas-discharge bulb embedded inside ballast starters used to light up fluorescent lights. Either way, you will need to solder a resistor, between 20kΩ and 50kΩ, to the bulb since the output voltage is a little over 100V.
 
 ![Hardware necessary to build this project](images/hardware.png)
 
